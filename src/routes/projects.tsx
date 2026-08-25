@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import type { ProjectStatus, ProjectType } from "@/lib/types";
 
 export const Route = createFileRoute("/projects")({
-  head: () => ({ meta: [{ title: "Projetos — HG Estrutural" }, { name: "description", content: "Gestão de projetos do escritório." }] }),
+  head: () => ({ meta: [{ title: "Projetos — Giarola Engenharia" }, { name: "description", content: "Gestão de projetos do escritório." }] }),
   component: ProjectsPage,
 });
 

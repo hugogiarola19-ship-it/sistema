@@ -1,6 +1,6 @@
-# HG Estrutural — Painel do Escritório
+# Giarola Engenharia — Painel do Escritório
 
-Sistema de gestão para o escritório de engenharia estrutural HG Estrutural: projetos, clientes, tarefas (kanban), financeiro, propostas e documentos, com controle de acesso por usuário.
+Sistema de gestão para o escritório de engenharia estrutural Giarola Engenharia: projetos, clientes, tarefas (kanban), financeiro, propostas e documentos, com controle de acesso por usuário.
 
 ## Stack
 

@@ -51,7 +51,7 @@
 
 :root {
   --radius: 0.625rem;
-  /* HG Estrutural brand palette
+  /* Giarola Engenharia brand palette
      Azul marinho #005684 · Dourado #bcb284 · Cinza escuro #404543 · Cinza claro #e7ecef */
   --primary: oklch(0.44 0.093 236.5);        /* #005684 */
   --primary-foreground: oklch(0.985 0.003 240);

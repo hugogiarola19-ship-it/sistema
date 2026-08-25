@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — HG Estrutural" },
+      { title: "Dashboard — Giarola Engenharia" },
       { name: "description", content: "Visão geral dos projetos, tarefas e finanças do escritório." },
     ],
   }),

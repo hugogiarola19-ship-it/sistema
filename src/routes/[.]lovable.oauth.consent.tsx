@@ -78,13 +78,13 @@ function Consent() {
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-accent font-bold text-accent-foreground">
-          HG
+          GE
         </div>
         <h1 className="text-lg font-semibold text-foreground">
           Conectar {clientName} à sua conta
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Isso permite que {clientName} acesse o painel HG Estrutural como você, respeitando as suas
+          Isso permite que {clientName} acesse o painel Giarola Engenharia como você, respeitando as suas
           permissões.
         </p>
         {error && (

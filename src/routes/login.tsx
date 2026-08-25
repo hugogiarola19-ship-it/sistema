@@ -13,10 +13,10 @@ export const Route = createFileRoute("/login")({
   }),
   head: () => ({
     meta: [
-      { title: "Entrar — HG Estrutural" },
-      { name: "description", content: "Acesso restrito ao painel de gestão do escritório HG Estrutural." },
-      { property: "og:title", content: "Entrar — HG Estrutural" },
-      { property: "og:description", content: "Acesso restrito ao painel de gestão do escritório HG Estrutural." },
+      { title: "Entrar — Giarola Engenharia" },
+      { name: "description", content: "Acesso restrito ao painel de gestão do escritório Giarola Engenharia." },
+      { property: "og:title", content: "Entrar — Giarola Engenharia" },
+      { property: "og:description", content: "Acesso restrito ao painel de gestão do escritório Giarola Engenharia." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -87,10 +87,10 @@ function LoginPage() {
       >
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent font-bold text-accent-foreground">
-            HG
+            GE
           </div>
           <div className="leading-tight">
-            <h1 className="text-base font-semibold text-foreground">HG Estrutural</h1>
+            <h1 className="text-base font-semibold text-foreground">Giarola Engenharia</h1>
             <p className="text-xs text-muted-foreground">Painel do Escritório</p>
           </div>
         </div>

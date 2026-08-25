@@ -21,9 +21,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Administração — HG Estrutural" },
+      { title: "Administração — Giarola Engenharia" },
       { name: "description", content: "Gerencie usuários do escritório e as áreas que cada um pode acessar." },
-      { property: "og:title", content: "Administração — HG Estrutural" },
+      { property: "og:title", content: "Administração — Giarola Engenharia" },
       { property: "og:description", content: "Gerencie usuários do escritório e as áreas que cada um pode acessar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
