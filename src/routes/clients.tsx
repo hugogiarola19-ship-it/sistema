@@ -11,7 +11,7 @@ import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/clients")({
-  head: () => ({ meta: [{ title: "Clientes — HG Estrutural" }, { name: "description", content: "Cadastro de clientes do escritório." }] }),
+  head: () => ({ meta: [{ title: "Clientes — Giarola Engenharia" }, { name: "description", content: "Cadastro de clientes do escritório." }] }),
   component: ClientsPage,
 });
 

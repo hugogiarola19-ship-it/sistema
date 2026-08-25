@@ -6,10 +6,10 @@ const projectRef = import.meta.env['VITE_SUPABASE_PROJECT_ID'] ?? "project-ref-u
 
 export default defineMcp({
   name: "hg-estrutural-office-hub",
-  title: "HG Estrutural: Office Hub",
+  title: "Giarola Engenharia: Office Hub",
   version: "0.1.0",
   instructions:
-    "Ferramentas do painel HG Estrutural. Use `whoami` para ver o perfil e as permissões do usuário conectado e `list_team_members` para listar a equipe do escritório.",
+    "Ferramentas do painel Giarola Engenharia. Use `whoami` para ver o perfil e as permissões do usuário conectado e `list_team_members` para listar a equipe do escritório.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",

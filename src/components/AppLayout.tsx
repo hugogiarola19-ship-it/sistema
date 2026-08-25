@@ -23,11 +23,11 @@ function Brand({ collapsed }: { collapsed?: boolean }) {
   return (
     <div className="flex items-center gap-2 px-4 py-5">
       <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent text-accent-foreground font-bold">
-        HG
+        GE
       </div>
       {!collapsed && (
         <div className="leading-tight">
-          <div className="text-sm font-semibold text-sidebar-foreground">HG Estrutural</div>
+          <div className="text-sm font-semibold text-sidebar-foreground">Giarola Engenharia</div>
           <div className="text-[11px] text-sidebar-foreground/60">Painel do Escritório</div>
         </div>
       )}

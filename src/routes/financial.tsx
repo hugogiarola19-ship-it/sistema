@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import type { Transaction, TxStatus, TxType } from "@/lib/types";
 
 export const Route = createFileRoute("/financial")({
-  head: () => ({ meta: [{ title: "Financeiro — HG Estrutural" }, { name: "description", content: "Receitas, despesas e resultado mensal." }] }),
+  head: () => ({ meta: [{ title: "Financeiro — Giarola Engenharia" }, { name: "description", content: "Receitas, despesas e resultado mensal." }] }),
   component: FinancialPage,
 });
 

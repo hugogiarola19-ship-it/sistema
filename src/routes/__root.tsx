@@ -82,10 +82,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Dashboard — HG Estrutural" },
+      { title: "Dashboard — Giarola Engenharia" },
       { name: "description", content: "Visão geral dos projetos, tarefas e finanças do escritório." },
-      { property: "og:title", content: "Dashboard — HG Estrutural" },
-      { name: "twitter:title", content: "Dashboard — HG Estrutural" },
+      { property: "og:title", content: "Dashboard — Giarola Engenharia" },
+      { name: "twitter:title", content: "Dashboard — Giarola Engenharia" },
       { property: "og:description", content: "Visão geral dos projetos, tarefas e finanças do escritório." },
       { name: "twitter:description", content: "Visão geral dos projetos, tarefas e finanças do escritório." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d4960805-79ca-4197-8f47-a28ab2099ab5/id-preview-2c79eca4--a4bee8d2-c475-4ca9-a7f5-01ca606089dd.lovable.app-1780318614658.png" },

@@ -17,7 +17,7 @@ import type { Task, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tasks")({
-  head: () => ({ meta: [{ title: "Tarefas — HG Estrutural" }, { name: "description", content: "Kanban de tarefas." }] }),
+  head: () => ({ meta: [{ title: "Tarefas — Giarola Engenharia" }, { name: "description", content: "Kanban de tarefas." }] }),
   component: TasksPage,
 });
 

@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import type { Proposal, ProposalStatus } from "@/lib/types";
 
 export const Route = createFileRoute("/proposals")({
-  head: () => ({ meta: [{ title: "Propostas — HG Estrutural" }, { name: "description", content: "Propostas e orçamentos enviados." }] }),
+  head: () => ({ meta: [{ title: "Propostas — Giarola Engenharia" }, { name: "description", content: "Propostas e orçamentos enviados." }] }),
   component: ProposalsPage,
 });
 
