@@ -20,11 +20,12 @@ import {
   useTaskSections,
   useSubtasks,
   useTaskComments,
+  useTaskFields,
   useProjects,
   isTaskDone,
   sortedSections,
+  sortedFields,
   formatDateTime,
-  uid,
 } from "@/lib/storage";
 import { useAppAuth } from "@/hooks/useAppAuth";
 import { useAppUsers } from "@/hooks/useAppUsers";
@@ -50,6 +51,8 @@ export function TaskDetailSheet({
     remove: removeSubtask,
   } = useSubtasks();
   const { items: allComments, add: addComment } = useTaskComments();
+  const { items: fieldsRaw } = useTaskFields();
+  const fields = sortedFields(fieldsRaw);
   const { items: projects } = useProjects();
   const { data: users = [] } = useAppUsers();
   const { user: me } = useAppAuth();
@@ -216,6 +219,50 @@ export function TaskDetailSheet({
               </F>
             </div>
           </div>
+
+          {fields.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              {fields.map((f) => (
+                <F key={f.id} label={f.name}>
+                  {f.type === "select" ? (
+                    <Select
+                      value={String(task.customFields?.[f.id] ?? "none")}
+                      onValueChange={(v) =>
+                        updateTask(task.id, {
+                          customFields: { ...task.customFields, [f.id]: v === "none" ? "" : v },
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">—</SelectItem>
+                        {(f.options ?? []).map((o) => (
+                          <SelectItem key={o} value={o}>
+                            {o}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      type={f.type === "number" ? "number" : "text"}
+                      value={task.customFields?.[f.id] ?? ""}
+                      onChange={(e) =>
+                        updateTask(task.id, {
+                          customFields: {
+                            ...task.customFields,
+                            [f.id]: f.type === "number" ? Number(e.target.value) : e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  )}
+                </F>
+              ))}
+            </div>
+          )}
 
           <Separator />
 

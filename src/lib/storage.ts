@@ -6,6 +6,7 @@ import type {
   TaskSection,
   Subtask,
   TaskComment,
+  TaskFieldDef,
   Transaction,
   Proposal,
 } from "./types";
@@ -17,6 +18,7 @@ const KEYS = {
   taskSections: "hg.taskSections",
   subtasks: "hg.subtasks",
   taskComments: "hg.taskComments",
+  taskFields: "hg.taskFields",
   transactions: "hg.transactions",
   proposals: "hg.proposals",
   expenseCategories: "hg.expenseCategories",
@@ -342,6 +344,7 @@ export const useTasks = () => useCollection<Task>(KEYS.tasks);
 export const useTaskSections = () => useCollection<TaskSection>(KEYS.taskSections);
 export const useSubtasks = () => useCollection<Subtask>(KEYS.subtasks);
 export const useTaskComments = () => useCollection<TaskComment>(KEYS.taskComments);
+export const useTaskFields = () => useCollection<TaskFieldDef>(KEYS.taskFields);
 export const useTransactions = () => useCollection<Transaction>(KEYS.transactions);
 export const useProposals = () => useCollection<Proposal>(KEYS.proposals);
 
@@ -351,6 +354,9 @@ export const isTaskDone = (task: Task, sections: TaskSection[]) =>
 
 export const sortedSections = (sections: TaskSection[]) =>
   [...sections].sort((a, b) => a.order - b.order);
+
+export const sortedFields = (fields: TaskFieldDef[]) =>
+  [...fields].sort((a, b) => a.order - b.order);
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
   "Anuidade CREA",
