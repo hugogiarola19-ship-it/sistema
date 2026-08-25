@@ -1,7 +1,6 @@
 export type ProjectType = "Unifamiliar" | "Multifamiliar" | "Comercial";
 export type ProjectStatus = "Em andamento" | "Aguardando cliente" | "Entregue" | "Arquivado";
 export type ClientType = "Arquiteto" | "Construtora" | "Cliente particular" | "Seguradora";
-export type TaskStatus = "A fazer" | "Em andamento" | "Concluído";
 export type TaskPriority = "Alta" | "Média" | "Baixa";
 export type TxType = "Receita" | "Despesa";
 export type TxStatus = "Pago" | "Pendente" | "Cancelado";
@@ -40,13 +39,40 @@ export interface Project {
   notes?: string;
 }
 
+/** Coluna do quadro de tarefas. Livremente criável/renomeável pelo usuário, como no Asana. */
+export interface TaskSection {
+  id: string;
+  name: string;
+  order: number;
+  /** tarefas nesta seção contam como concluídas (progresso, checklist, "Minhas tarefas") */
+  isDone: boolean;
+}
+
+export interface Subtask {
+  id: string;
+  taskId: string;
+  title: string;
+  completed: boolean;
+  order: number;
+}
+
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  authorId?: string;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   projectId?: string;
   dueDate?: string;
   priority: TaskPriority;
-  status: TaskStatus;
+  sectionId: string;
   /** id do usuário responsável (profiles.id) */
   assigneeId?: string;
   weekly?: boolean;

@@ -1,6 +1,19 @@
 import { Link, useRouterState, useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, FolderKanban, Users, ListChecks, Wallet, FileText, Menu, X, LogOut, ShieldCheck, Lock } from "lucide-react";
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Users,
+  ListChecks,
+  ListTodo,
+  Wallet,
+  FileText,
+  Menu,
+  X,
+  LogOut,
+  ShieldCheck,
+  Lock,
+} from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,12 +21,19 @@ import { useAppAuth } from "@/hooks/useAppAuth";
 import { requiredPermission, type Permission } from "@/lib/permissions";
 import { EmptyState } from "@/components/PageHeader";
 
-
-const nav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; permission?: Permission; adminOnly?: boolean }> = [
+const nav: Array<{
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+  permission?: Permission;
+  adminOnly?: boolean;
+}> = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/my-tasks", label: "Minhas tarefas", icon: ListTodo, permission: "tasks" },
   { to: "/projects", label: "Projetos", icon: FolderKanban, permission: "projects" },
   { to: "/clients", label: "Clientes", icon: Users, permission: "clients" },
-  { to: "/tasks", label: "Tarefas", icon: ListChecks, permission: "tasks" },
+  { to: "/tasks", label: "Quadro de tarefas", icon: ListChecks, permission: "tasks" },
   { to: "/financial", label: "Financeiro", icon: Wallet, permission: "financial" },
   { to: "/proposals", label: "Propostas", icon: FileText, permission: "proposals" },
   { to: "/admin", label: "Administração", icon: ShieldCheck, adminOnly: true },
@@ -36,7 +56,7 @@ function Brand({ collapsed }: { collapsed?: boolean }) {
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const pathname = useRouterState({ select: r => r.location.pathname });
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const qc = useQueryClient();
@@ -52,10 +72,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (!loading && !user) router.navigate({ to: "/login", search: { next: undefined }, replace: true });
+    if (!loading && !user)
+      router.navigate({ to: "/login", search: { next: undefined }, replace: true });
   }, [loading, user, router]);
 
-  const visibleNav = nav.filter(item => {
+  const visibleNav = nav.filter((item) => {
     if (item.adminOnly) return !!user?.isAdmin;
     if (item.permission) return can(item.permission);
     return true;
@@ -72,7 +93,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-
   return (
     <div className="flex min-h-screen w-full bg-background">
       {/* Sidebar — desktop */}
@@ -84,7 +104,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       >
         <Brand collapsed={collapsed} />
         <nav className="flex-1 px-2 space-y-1">
-          {visibleNav.map(item => {
+          {visibleNav.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to, item.exact);
             return (
@@ -112,12 +132,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {!collapsed && <span className="ml-1">Sair</span>}
         </button>
         <button
-          onClick={() => setCollapsed(c => !c)}
+          onClick={() => setCollapsed((c) => !c)}
           className="m-3 inline-flex items-center justify-center rounded-md border border-sidebar-border/60 px-2 py-1.5 text-xs text-sidebar-foreground/80 hover:bg-sidebar-accent"
         >
-          {collapsed ? <Menu className="h-4 w-4" /> : <><X className="h-3 w-3 mr-1" /> Recolher</>}
+          {collapsed ? (
+            <Menu className="h-4 w-4" />
+          ) : (
+            <>
+              <X className="h-3 w-3 mr-1" /> Recolher
+            </>
+          )}
         </button>
-
       </aside>
 
       {/* Main */}
@@ -136,8 +161,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Bottom nav — mobile */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-sidebar text-sidebar-foreground border-t border-sidebar-border grid" style={{ gridTemplateColumns: `repeat(${visibleNav.length}, minmax(0, 1fr))` }}>
-        {visibleNav.map(item => {
+      <nav
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-sidebar text-sidebar-foreground border-t border-sidebar-border grid"
+        style={{ gridTemplateColumns: `repeat(${visibleNav.length}, minmax(0, 1fr))` }}
+      >
+        {visibleNav.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.to, item.exact);
           return (
