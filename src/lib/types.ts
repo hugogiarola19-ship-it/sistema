@@ -65,6 +65,18 @@ export interface TaskComment {
   createdAt: string;
 }
 
+export type TaskFieldType = "text" | "number" | "select";
+
+/** Campo customizado de tarefa, definido pelo usuário (como Custom Fields no ClickUp). */
+export interface TaskFieldDef {
+  id: string;
+  name: string;
+  type: TaskFieldType;
+  /** opções disponíveis, apenas quando type === "select" */
+  options?: string[];
+  order: number;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -76,6 +88,8 @@ export interface Task {
   /** id do usuário responsável (profiles.id) */
   assigneeId?: string;
   weekly?: boolean;
+  /** valores dos campos customizados, chaveados por TaskFieldDef.id */
+  customFields?: Record<string, string | number>;
 }
 
 export interface Transaction {

@@ -11,21 +11,47 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { Plus, Trash2, GripVertical, MoreHorizontal, ListChecks, CheckCircle2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  GripVertical,
+  MoreHorizontal,
+  ListChecks,
+  CheckCircle2,
+  Search,
+} from "lucide-react";
 import {
   useProjects,
   useTasks,
   useTaskSections,
   useSubtasks,
+  useTaskFields,
   sortedSections,
+  sortedFields,
   isTaskDone,
   formatDate,
 } from "@/lib/storage";
+import { useAppUsers } from "@/hooks/useAppUsers";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/PageHeader";
 import { ViewToggle, useViewMode } from "@/components/ViewToggle";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,9 +65,10 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { AssigneeBadge } from "@/components/AssigneeBadge";
 import { TaskFormDialog } from "@/components/forms/TaskFormDialog";
 import { TaskDetailSheet } from "@/components/TaskDetailSheet";
+import { ManageFieldsDialog } from "@/components/ManageFieldsDialog";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
-import type { Task } from "@/lib/types";
+import type { Task, TaskPriority } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tasks")({
@@ -54,9 +81,14 @@ export const Route = createFileRoute("/tasks")({
   component: TasksPage,
 });
 
+const PRIORITY_RANK: Record<TaskPriority, number> = { Alta: 0, Média: 1, Baixa: 2 };
+type SortBy = "prazo" | "prioridade" | "titulo";
+type GroupBy = "secao" | "responsavel" | "nenhum";
+
 function TasksPage() {
   const { items: tasks, update, remove } = useTasks();
   const { items: projects } = useProjects();
+  const { data: users = [] } = useAppUsers();
   const {
     items: sectionsRaw,
     add: addSection,
@@ -64,22 +96,52 @@ function TasksPage() {
     remove: removeSection,
   } = useTaskSections();
   const { items: subtasks } = useSubtasks();
+  const { items: fieldsRaw } = useTaskFields();
+  const fields = sortedFields(fieldsRaw);
   const sections = sortedSections(sectionsRaw);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [view, setView] = useViewMode("tasks", "quadro");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
+  const [search, setSearch] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "all">("all");
+  const [projectFilter, setProjectFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<SortBy>("prazo");
+  const [groupBy, setGroupBy] = useState<GroupBy>("secao");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return tasks.filter((t) => {
+      if (q && !t.title.toLowerCase().includes(q)) return false;
+      if (assigneeFilter !== "all" && (t.assigneeId ?? "none") !== assigneeFilter) return false;
+      if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
+      if (projectFilter !== "all" && (t.projectId ?? "none") !== projectFilter) return false;
+      return true;
+    });
+  }, [tasks, search, assigneeFilter, priorityFilter, projectFilter]);
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      if (sortBy === "prioridade") return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
+      if (sortBy === "titulo") return a.title.localeCompare(b.title);
+      return (a.dueDate ?? "9999-99-99").localeCompare(b.dueDate ?? "9999-99-99");
+    });
+    return arr;
+  }, [filtered, sortBy]);
+
   const byCol = useMemo(() => {
     const map: Record<string, Task[]> = {};
     sections.forEach((s) => {
       map[s.id] = [];
     });
-    tasks.forEach((t) => {
+    sorted.forEach((t) => {
       (map[t.sectionId] ??= []).push(t);
     });
     return map;
-  }, [tasks, sections]);
+  }, [sorted, sections]);
 
   const subtaskCount = (taskId: string) => {
     const own = subtasks.filter((s) => s.taskId === taskId);
@@ -88,6 +150,8 @@ function TasksPage() {
 
   const projName = (id?: string) => projects.find((p) => p.id === id)?.name;
   const sectionName = (id: string) => sections.find((s) => s.id === id)?.name ?? "—";
+  const userName = (id?: string) =>
+    users.find((u) => u.id === id)?.name || users.find((u) => u.id === id)?.email;
 
   const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
   const onDragEnd = (e: DragEndEvent) => {
@@ -123,6 +187,26 @@ function TasksPage() {
     toast.success("Seção excluída.");
   };
 
+  const groups: Array<{ key: string; label: string; tasks: Task[] }> = useMemo(() => {
+    if (groupBy === "nenhum") return [{ key: "all", label: "Todas", tasks: sorted }];
+    if (groupBy === "responsavel") {
+      const withNone = [
+        ...users.map((u) => ({ id: u.id, label: u.name || u.email })),
+        { id: "none", label: "Sem responsável" },
+      ];
+      return withNone
+        .map((u) => ({
+          key: u.id,
+          label: u.label,
+          tasks: sorted.filter((t) => (t.assigneeId ?? "none") === u.id),
+        }))
+        .filter((g) => g.tasks.length > 0);
+    }
+    return sections
+      .map((s) => ({ key: s.id, label: s.name, tasks: sorted.filter((t) => t.sectionId === s.id) }))
+      .filter((g) => g.tasks.length > 0);
+  }, [groupBy, sorted, sections, users]);
+
   return (
     <div>
       <PageHeader
@@ -131,6 +215,7 @@ function TasksPage() {
         actions={
           <>
             <ViewToggle value={view} onChange={setView} options={["quadro", "lista", "bloco"]} />
+            <ManageFieldsDialog />
             <TaskFormDialog
               trigger={
                 <Button>
@@ -141,6 +226,82 @@ function TasksPage() {
           </>
         }
       />
+
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar tarefas..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-9 w-48"
+          />
+        </div>
+        <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+          <SelectTrigger className="h-9 w-[170px]">
+            <SelectValue placeholder="Responsável" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos responsáveis</SelectItem>
+            <SelectItem value="none">Sem responsável</SelectItem>
+            {users.map((u) => (
+              <SelectItem key={u.id} value={u.id}>
+                {u.name || u.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={priorityFilter}
+          onValueChange={(v) => setPriorityFilter(v as TaskPriority | "all")}
+        >
+          <SelectTrigger className="h-9 w-[150px]">
+            <SelectValue placeholder="Prioridade" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas prioridades</SelectItem>
+            <SelectItem value="Alta">Alta</SelectItem>
+            <SelectItem value="Média">Média</SelectItem>
+            <SelectItem value="Baixa">Baixa</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={projectFilter} onValueChange={setProjectFilter}>
+          <SelectTrigger className="h-9 w-[190px]">
+            <SelectValue placeholder="Projeto" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os projetos</SelectItem>
+            <SelectItem value="none">Sem projeto</SelectItem>
+            {projects.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortBy)}>
+          <SelectTrigger className="h-9 w-[160px]">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="prazo">Ordenar: Prazo</SelectItem>
+            <SelectItem value="prioridade">Ordenar: Prioridade</SelectItem>
+            <SelectItem value="titulo">Ordenar: Título</SelectItem>
+          </SelectContent>
+        </Select>
+        {view === "lista" && (
+          <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupBy)}>
+            <SelectTrigger className="h-9 w-[170px]">
+              <SelectValue placeholder="Agrupar por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="secao">Agrupar: Seção</SelectItem>
+              <SelectItem value="responsavel">Agrupar: Responsável</SelectItem>
+              <SelectItem value="nenhum">Sem agrupamento</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
       {view === "quadro" ? (
         <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -191,7 +352,7 @@ function TasksPage() {
         </DndContext>
       ) : view === "bloco" ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {tasks.map((t) => {
+          {sorted.map((t) => {
             const st = subtaskCount(t.id);
             return (
               <Card
@@ -252,66 +413,106 @@ function TasksPage() {
               </Card>
             );
           })}
-          {tasks.length === 0 && <p className="text-sm text-muted-foreground">Sem tarefas.</p>}
+          {sorted.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhuma tarefa encontrada.</p>
+          )}
         </div>
       ) : (
-        <Card>
-          <CardContent className="p-0 divide-y">
-            {tasks.length === 0 && (
-              <p className="text-sm text-muted-foreground p-4">Sem tarefas.</p>
-            )}
-            {tasks.map((t) => {
-              const st = subtaskCount(t.id);
-              return (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer hover:bg-secondary/40"
-                  onClick={() => setOpenTaskId(t.id)}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        "text-sm font-medium truncate",
-                        isTaskDone(t, sections) && "line-through text-muted-foreground",
-                      )}
-                    >
-                      {t.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {[
-                        projName(t.projectId),
-                        sectionName(t.sectionId),
-                        t.dueDate ? formatDate(t.dueDate) : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  </div>
-                  {st && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
-                      <ListChecks className="h-3 w-3" />
-                      {st.done}/{st.total}
-                    </span>
-                  )}
-                  <AssigneeBadge userId={t.assigneeId} />
-                  <StatusBadge value={t.priority} />
-                  <ConfirmDelete
-                    trigger={
-                      <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    }
-                    title="Excluir tarefa?"
-                    onConfirm={() => {
-                      remove(t.id);
-                      toast.success("Tarefa excluída.");
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          {groups.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhuma tarefa encontrada.</p>
+          )}
+          {groups.map((g) => (
+            <div key={g.key}>
+              {groupBy !== "nenhum" && (
+                <h3 className="text-xs uppercase tracking-wide font-medium text-muted-foreground mb-2">
+                  {g.label} <span className="text-muted-foreground/70">({g.tasks.length})</span>
+                </h3>
+              )}
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tarefa</TableHead>
+                      <TableHead>Projeto</TableHead>
+                      <TableHead>Prazo</TableHead>
+                      <TableHead>Prioridade</TableHead>
+                      <TableHead>Responsável</TableHead>
+                      {fields.map((f) => (
+                        <TableHead key={f.id}>{f.name}</TableHead>
+                      ))}
+                      <TableHead className="w-9" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {g.tasks.map((t) => {
+                      const st = subtaskCount(t.id);
+                      return (
+                        <TableRow
+                          key={t.id}
+                          className="cursor-pointer"
+                          onClick={() => setOpenTaskId(t.id)}
+                        >
+                          <TableCell>
+                            <p
+                              className={cn(
+                                "text-sm font-medium",
+                                isTaskDone(t, sections) && "line-through text-muted-foreground",
+                              )}
+                            >
+                              {t.title}
+                            </p>
+                            {st && (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                                <ListChecks className="h-3 w-3" />
+                                {st.done}/{st.total}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {projName(t.projectId) ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                            {t.dueDate ? formatDate(t.dueDate) : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge value={t.priority} />
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {userName(t.assigneeId) ?? "—"}
+                          </TableCell>
+                          {fields.map((f) => (
+                            <TableCell key={f.id} className="text-sm text-muted-foreground">
+                              {t.customFields?.[f.id] ?? "—"}
+                            </TableCell>
+                          ))}
+                          <TableCell>
+                            <ConfirmDelete
+                              trigger={
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              }
+                              title="Excluir tarefa?"
+                              onConfirm={() => {
+                                remove(t.id);
+                                toast.success("Tarefa excluída.");
+                              }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </Card>
+            </div>
+          ))}
+        </div>
       )}
 
       <TaskDetailSheet taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
