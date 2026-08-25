@@ -13,6 +13,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
 /** Rota -> permissão necessária */
 export const ROUTE_PERMISSION: Array<{ prefix: string; permission: Permission }> = [
   { prefix: "/projects", permission: "projects" },
+  { prefix: "/my-tasks", permission: "tasks" },
   { prefix: "/tasks", permission: "tasks" },
   { prefix: "/clients", permission: "clients" },
   { prefix: "/financial", permission: "financial" },
@@ -20,6 +21,8 @@ export const ROUTE_PERMISSION: Array<{ prefix: string; permission: Permission }>
 ];
 
 export function requiredPermission(pathname: string): Permission | null {
-  const hit = ROUTE_PERMISSION.find(r => pathname === r.prefix || pathname.startsWith(r.prefix + "/"));
+  const hit = ROUTE_PERMISSION.find(
+    (r) => pathname === r.prefix || pathname.startsWith(r.prefix + "/"),
+  );
   return hit ? hit.permission : null;
 }

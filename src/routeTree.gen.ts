@@ -15,6 +15,7 @@ import { Route as ClientsRouteImport } from './routes/clients'
 import { Route as FinancialRouteImport } from './routes/financial'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as MyTasksRouteImport } from './routes/my-tasks'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProposalsRouteImport } from './routes/proposals'
 import { Route as TasksRouteImport } from './routes/tasks'
@@ -53,6 +54,11 @@ const LoginRoute = LoginRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyTasksRoute = MyTasksRouteImport.update({
+  id: '/my-tasks',
+  path: '/my-tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/financial': typeof FinancialRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/my-tasks': typeof MyTasksRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/proposals': typeof ProposalsRoute
   '/tasks': typeof TasksRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/financial': typeof FinancialRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/my-tasks': typeof MyTasksRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/proposals': typeof ProposalsRoute
   '/tasks': typeof TasksRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/financial': typeof FinancialRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/my-tasks': typeof MyTasksRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/proposals': typeof ProposalsRoute
   '/tasks': typeof TasksRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/financial'
     | '/login'
     | '/mcp'
+    | '/my-tasks'
     | '/projects'
     | '/proposals'
     | '/tasks'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/financial'
     | '/login'
     | '/mcp'
+    | '/my-tasks'
     | '/projects'
     | '/proposals'
     | '/tasks'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/financial'
     | '/login'
     | '/mcp'
+    | '/my-tasks'
     | '/projects'
     | '/proposals'
     | '/tasks'
@@ -217,6 +229,7 @@ export interface RootRouteChildren {
   FinancialRoute: typeof FinancialRoute
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
+  MyTasksRoute: typeof MyTasksRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   ProposalsRoute: typeof ProposalsRoute
   TasksRoute: typeof TasksRoute
@@ -268,6 +281,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-tasks': {
+      id: '/my-tasks'
+      path: '/my-tasks'
+      fullPath: '/my-tasks'
+      preLoaderRoute: typeof MyTasksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -366,6 +386,7 @@ const rootRouteChildren: RootRouteChildren = {
   FinancialRoute: FinancialRoute,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
+  MyTasksRoute: MyTasksRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   ProposalsRoute: ProposalsRoute,
   TasksRoute: TasksRoute,

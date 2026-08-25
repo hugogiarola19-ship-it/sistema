@@ -1,23 +1,57 @@
 import { useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2 } from "lucide-react";
-import { useClients, useProjects, useProposals, useTransactions, useTasks, formatBRL } from "@/lib/storage";
-import type { Project, ProjectStatus, ProjectType, Task, TaskPriority, TaskStatus, Transaction } from "@/lib/types";
+import {
+  useClients,
+  useProjects,
+  useProposals,
+  useTransactions,
+  useTasks,
+  useTaskSections,
+  sortedSections,
+  formatBRL,
+} from "@/lib/storage";
+import type {
+  Project,
+  ProjectStatus,
+  ProjectType,
+  Task,
+  TaskPriority,
+  Transaction,
+} from "@/lib/types";
 import { toast } from "sonner";
 
 const types: ProjectType[] = ["Unifamiliar", "Multifamiliar", "Comercial"];
 const statuses: ProjectStatus[] = ["Em andamento", "Aguardando cliente", "Entregue", "Arquivado"];
 const priorities: TaskPriority[] = ["Alta", "Média", "Baixa"];
-const taskStatuses: TaskStatus[] = ["A fazer", "Em andamento", "Concluído"];
 
 type Installment = { date: string; value: number };
-type TaskDraft = { id?: string; title: string; dueDate: string; priority: TaskPriority; status: TaskStatus };
+type TaskDraft = {
+  id?: string;
+  title: string;
+  dueDate: string;
+  priority: TaskPriority;
+  sectionId: string;
+};
 
 const addMonths = (iso: string, n: number) => {
   const d = new Date(`${iso}T00:00:00`);
@@ -25,8 +59,8 @@ const addMonths = (iso: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-const isValidDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(new Date(`${s}T00:00:00`).getTime());
-
+const isValidDate = (s: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(new Date(`${s}T00:00:00`).getTime());
 
 export function ProjectFormDialog({
   trigger,
@@ -42,6 +76,8 @@ export function ProjectFormDialog({
   const { add, update } = useProjects();
   const { items: transactions, add: addTx, remove: removeTx } = useTransactions();
   const { items: allTasks, add: addTask, update: updateTask, remove: removeTask } = useTasks();
+  const { items: sectionsRaw } = useTaskSections();
+  const sections = sortedSections(sectionsRaw);
   const [open, setOpen] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState<Omit<Project, "id">>(
@@ -58,7 +94,10 @@ export function ProjectFormDialog({
   );
 
   const existingInstallments = useMemo(
-    () => (initial ? transactions.filter(t => t.projectId === initial.id && t.installment != null) : []),
+    () =>
+      initial
+        ? transactions.filter((t) => t.projectId === initial.id && t.installment != null)
+        : [],
     [transactions, initial],
   );
 
@@ -66,21 +105,27 @@ export function ProjectFormDialog({
   const [installments, setInstallments] = useState<Installment[]>(
     existingInstallments
       .sort((a, b) => (a.installment ?? 0) - (b.installment ?? 0))
-      .map(t => ({ date: t.date, value: t.value })),
+      .map((t) => ({ date: t.date, value: t.value })),
   );
 
   const buildInstallments = (n: number) => {
     setCount(n);
-    if (!n || n < 1) { setInstallments([]); return; }
+    if (!n || n < 1) {
+      setInstallments([]);
+      return;
+    }
     const base = form.value ? Math.round((form.value / n) * 100) / 100 : 0;
     const start = isValidDate(form.startDate) ? form.startDate : today;
     setInstallments(
-      Array.from({ length: n }, (_, i) => installments[i] ?? { date: addMonths(start, i), value: base }),
+      Array.from(
+        { length: n },
+        (_, i) => installments[i] ?? { date: addMonths(start, i), value: base },
+      ),
     );
   };
 
   const setInst = (i: number, patch: Partial<Installment>) => {
-    setInstallments(prev => {
+    setInstallments((prev) => {
       const next = prev.map((x, idx) => (idx === i ? { ...x, ...patch } : x));
       if (i === 0 && "value" in patch && patch.value != null && count > 1 && form.value > 0) {
         const remaining = Math.max(0, form.value - Number(patch.value));
@@ -94,23 +139,30 @@ export function ProjectFormDialog({
   const totalInstallments = installments.reduce((s, i) => s + (Number(i.value) || 0), 0);
 
   const existingTasks = useMemo(
-    () => (initial ? allTasks.filter(t => t.projectId === initial.id) : []),
+    () => (initial ? allTasks.filter((t) => t.projectId === initial.id) : []),
     [allTasks, initial],
   );
   const [tasks, setTasks] = useState<TaskDraft[]>(
-    existingTasks.map(t => ({
+    existingTasks.map((t) => ({
       id: t.id,
       title: t.title,
       dueDate: t.dueDate ?? "",
       priority: t.priority,
-      status: t.status,
+      sectionId: t.sectionId,
     })),
   );
   const setTask = (i: number, patch: Partial<TaskDraft>) =>
-    setTasks(prev => prev.map((t, idx) => (idx === i ? { ...t, ...patch } : t)));
+    setTasks((prev) => prev.map((t, idx) => (idx === i ? { ...t, ...patch } : t)));
   const addTaskRow = () =>
-    setTasks(prev => [...prev, { title: "", dueDate: form.deadline || today, priority: "Média", status: "A fazer" }]);
-
+    setTasks((prev) => [
+      ...prev,
+      {
+        title: "",
+        dueDate: form.deadline || today,
+        priority: "Média",
+        sectionId: sections[0]?.id ?? "sec-todo",
+      },
+    ]);
 
   const submit = () => {
     if (!form.name.trim() || !form.clientId) {
@@ -125,12 +177,12 @@ export function ProjectFormDialog({
       toast.error("O prazo não pode ser anterior à data de início.");
       return;
     }
-    if (installments.some(i => !isValidDate(i.date))) {
+    if (installments.some((i) => !isValidDate(i.date))) {
       toast.error("Informe vencimentos válidos para todas as parcelas.");
       return;
     }
-    const validTasks = tasks.filter(t => t.title.trim());
-    if (validTasks.some(t => t.dueDate && !isValidDate(t.dueDate))) {
+    const validTasks = tasks.filter((t) => t.title.trim());
+    if (validTasks.some((t) => t.dueDate && !isValidDate(t.dueDate))) {
       toast.error("Informe prazos válidos para as tarefas.");
       return;
     }
@@ -139,7 +191,7 @@ export function ProjectFormDialog({
     if (initial) update(initial.id, form);
 
     if (count > 0 || existingInstallments.length > 0) {
-      existingInstallments.forEach(t => removeTx(t.id));
+      existingInstallments.forEach((t) => removeTx(t.id));
       installments.forEach((inst, i) => {
         const tx: Omit<Transaction, "id"> = {
           description: `${form.name} — parcela ${i + 1}/${installments.length}`,
@@ -154,20 +206,19 @@ export function ProjectFormDialog({
       });
     }
 
-    const keptIds = new Set(validTasks.map(t => t.id).filter(Boolean) as string[]);
-    existingTasks.filter(t => !keptIds.has(t.id)).forEach(t => removeTask(t.id));
-    validTasks.forEach(t => {
+    const keptIds = new Set(validTasks.map((t) => t.id).filter(Boolean) as string[]);
+    existingTasks.filter((t) => !keptIds.has(t.id)).forEach((t) => removeTask(t.id));
+    validTasks.forEach((t) => {
       const payload: Omit<Task, "id"> = {
         title: t.title.trim(),
         projectId,
         dueDate: t.dueDate || undefined,
         priority: t.priority,
-        status: t.status,
+        sectionId: t.sectionId,
       };
       if (t.id) updateTask(t.id, payload);
       else addTask(payload);
     });
-
 
     toast.success(initial ? "Projeto atualizado." : "Projeto criado.");
     setOpen(false);
@@ -183,128 +234,257 @@ export function ProjectFormDialog({
         </DialogHeader>
         <Tabs defaultValue="dados">
           <TabsList className="w-full">
-            <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
-            <TabsTrigger value="tarefas" className="flex-1">Tarefas{tasks.length ? ` (${tasks.length})` : ""}</TabsTrigger>
+            <TabsTrigger value="dados" className="flex-1">
+              Dados
+            </TabsTrigger>
+            <TabsTrigger value="tarefas" className="flex-1">
+              Tarefas{tasks.length ? ` (${tasks.length})` : ""}
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="dados" className="grid gap-4 py-2">
-
-          <Field label="Nome do projeto">
-            <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Residência Silva — Cálculo Estrutural" />
-          </Field>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Cliente">
-              <Select value={form.clientId} onValueChange={v => setForm({ ...form, clientId: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <Field label="Nome do projeto">
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ex.: Residência Silva — Cálculo Estrutural"
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Cliente">
+                <Select
+                  value={form.clientId}
+                  onValueChange={(v) => setForm({ ...form, clientId: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Tipo">
+                <Select
+                  value={form.type}
+                  onValueChange={(v) => setForm({ ...form, type: v as ProjectType })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {types.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+            <Field label="Proposta">
+              <Select
+                value={form.proposalId ?? "none"}
+                onValueChange={(v) =>
+                  setForm({ ...form, proposalId: v === "none" ? undefined : v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma proposta" />
+                </SelectTrigger>
                 <SelectContent>
-                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  <SelectItem value="none">Sem proposta</SelectItem>
+                  {proposals
+                    .filter((p) => !form.clientId || p.clientId === form.clientId)
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.description} — {formatBRL(p.value)}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Tipo">
-              <Select value={form.type} onValueChange={v => setForm({ ...form, type: v as ProjectType })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{types.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-          </div>
-          <Field label="Proposta">
-            <Select value={form.proposalId ?? "none"} onValueChange={v => setForm({ ...form, proposalId: v === "none" ? undefined : v })}>
-              <SelectTrigger><SelectValue placeholder="Selecione uma proposta" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sem proposta</SelectItem>
-                {proposals
-                  .filter(p => !form.clientId || p.clientId === form.clientId)
-                  .map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.description} — {formatBRL(p.value)}</SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Status">
-              <Select value={form.status} onValueChange={v => setForm({ ...form, status: v as ProjectStatus })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-            <Field label="Início">
-              <Input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} />
-            </Field>
-          </div>
-          <Field label="Prazo">
-            <Input type="date" min={form.startDate} value={form.deadline} onChange={e => setForm({ ...form, deadline: e.target.value })} />
-          </Field>
-
-          <div className="rounded-lg border p-3 space-y-3">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Financeiro</p>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Valor do contrato">
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                  <Input className="pl-9" type="number" min={0} value={form.value} onChange={e => setForm({ ...form, value: Number(e.target.value) })} />
-                </div>
+              <Field label="Status">
+                <Select
+                  value={form.status}
+                  onValueChange={(v) => setForm({ ...form, status: v as ProjectStatus })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statuses.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
-              <Field label="Qtd. de parcelas">
-                <Input type="number" min={0} max={60} value={count} onChange={e => buildInstallments(Math.max(0, Math.min(60, Number(e.target.value))))} />
+              <Field label="Início">
+                <Input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                />
               </Field>
             </div>
+            <Field label="Prazo">
+              <Input
+                type="date"
+                min={form.startDate}
+                value={form.deadline}
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+              />
+            </Field>
 
-            {installments.length > 0 && (
-              <div className="space-y-2">
-                {installments.map((inst, i) => (
-                  <div key={i} className="grid grid-cols-[auto_1fr_1fr] items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-8">{i + 1}ª</span>
-                    <Input type="date" value={inst.date} onChange={e => setInst(i, { date: e.target.value })} />
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                      <Input className="pl-9" type="number" min={0} value={inst.value} onChange={e => setInst(i, { value: Number(e.target.value) })} />
-                    </div>
+            <div className="rounded-lg border p-3 space-y-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                Financeiro
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Valor do contrato">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      R$
+                    </span>
+                    <Input
+                      className="pl-9"
+                      type="number"
+                      min={0}
+                      value={form.value}
+                      onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
+                    />
                   </div>
-                ))}
-                <p className="text-xs text-muted-foreground">
-                  Total das parcelas: <span className="font-medium text-foreground">{formatBRL(totalInstallments)}</span>
-                  {form.value > 0 && Math.abs(totalInstallments - form.value) > 0.5 && " (difere do valor do contrato)"}
-                </p>
+                </Field>
+                <Field label="Qtd. de parcelas">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={60}
+                    value={count}
+                    onChange={(e) =>
+                      buildInstallments(Math.max(0, Math.min(60, Number(e.target.value))))
+                    }
+                  />
+                </Field>
               </div>
-            )}
-          </div>
 
-          <Field label="Observações">
-            <Textarea rows={3} value={form.notes ?? ""} onChange={e => setForm({ ...form, notes: e.target.value })} />
-          </Field>
+              {installments.length > 0 && (
+                <div className="space-y-2">
+                  {installments.map((inst, i) => (
+                    <div key={i} className="grid grid-cols-[auto_1fr_1fr] items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-8">{i + 1}ª</span>
+                      <Input
+                        type="date"
+                        value={inst.date}
+                        onChange={(e) => setInst(i, { date: e.target.value })}
+                      />
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          R$
+                        </span>
+                        <Input
+                          className="pl-9"
+                          type="number"
+                          min={0}
+                          value={inst.value}
+                          onChange={(e) => setInst(i, { value: Number(e.target.value) })}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground">
+                    Total das parcelas:{" "}
+                    <span className="font-medium text-foreground">
+                      {formatBRL(totalInstallments)}
+                    </span>
+                    {form.value > 0 &&
+                      Math.abs(totalInstallments - form.value) > 0.5 &&
+                      " (difere do valor do contrato)"}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <Field label="Observações">
+              <Textarea
+                rows={3}
+                value={form.notes ?? ""}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
+            </Field>
           </TabsContent>
 
           <TabsContent value="tarefas" className="space-y-3 py-2">
             {tasks.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhuma tarefa. Adicione tarefas para este projeto.</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhuma tarefa. Adicione tarefas para este projeto.
+              </p>
             )}
             {tasks.map((t, i) => (
               <div key={t.id ?? i} className="rounded-lg border p-3 space-y-3">
                 <div className="flex items-start gap-2">
                   <div className="flex-1">
                     <Field label="Nome da tarefa">
-                      <Input value={t.title} onChange={e => setTask(i, { title: e.target.value })} placeholder="Ex.: Lançamento da estrutura" />
+                      <Input
+                        value={t.title}
+                        onChange={(e) => setTask(i, { title: e.target.value })}
+                        placeholder="Ex.: Lançamento da estrutura"
+                      />
                     </Field>
                   </div>
-                  <Button variant="ghost" size="icon" className="mt-6" onClick={() => setTasks(prev => prev.filter((_, idx) => idx !== i))}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mt-6"
+                    onClick={() => setTasks((prev) => prev.filter((_, idx) => idx !== i))}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Prazo">
-                    <Input type="date" value={t.dueDate} onChange={e => setTask(i, { dueDate: e.target.value })} />
+                    <Input
+                      type="date"
+                      value={t.dueDate}
+                      onChange={(e) => setTask(i, { dueDate: e.target.value })}
+                    />
                   </Field>
                   <Field label="Prioridade">
-                    <Select value={t.priority} onValueChange={v => setTask(i, { priority: v as TaskPriority })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{priorities.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                    <Select
+                      value={t.priority}
+                      onValueChange={(v) => setTask(i, { priority: v as TaskPriority })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {priorities.map((p) => (
+                          <SelectItem key={p} value={p}>
+                            {p}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </Field>
                 </div>
-                <Field label="Status">
-                  <Select value={t.status} onValueChange={v => setTask(i, { status: v as TaskStatus })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{taskStatuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                <Field label="Seção">
+                  <Select value={t.sectionId} onValueChange={(v) => setTask(i, { sectionId: v })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sections.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </Field>
               </div>
@@ -315,10 +495,11 @@ export function ProjectFormDialog({
           </TabsContent>
         </Tabs>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
           <Button onClick={submit}>{initial ? "Salvar" : "Criar projeto"}</Button>
         </DialogFooter>
-
       </DialogContent>
     </Dialog>
   );
