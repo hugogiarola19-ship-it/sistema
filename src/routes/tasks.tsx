@@ -18,6 +18,8 @@ import {
   MoreHorizontal,
   ListChecks,
   CheckCircle2,
+  ChevronRight,
+  ChevronDown,
   Search,
 } from "lucide-react";
 import {
@@ -31,7 +33,8 @@ import {
   isTaskDone,
   formatDate,
 } from "@/lib/storage";
-import { useAppUsers } from "@/hooks/useAppUsers";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAppUsers, type AppUserRow } from "@/hooks/useAppUsers";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -62,13 +65,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { StatusBadge } from "@/components/StatusBadge";
-import { AssigneeBadge } from "@/components/AssigneeBadge";
 import { TaskFormDialog } from "@/components/forms/TaskFormDialog";
 import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { ManageFieldsDialog } from "@/components/ManageFieldsDialog";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
-import type { Task, TaskPriority } from "@/lib/types";
+import type { Task, TaskPriority, Subtask } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tasks")({
@@ -95,7 +97,7 @@ function TasksPage() {
     update: updateSection,
     remove: removeSection,
   } = useTaskSections();
-  const { items: subtasks } = useSubtasks();
+  const { items: subtasks, update: updateSubtask } = useSubtasks();
   const { items: fieldsRaw } = useTaskFields();
   const fields = sortedFields(fieldsRaw);
   const sections = sortedSections(sectionsRaw);
@@ -143,8 +145,9 @@ function TasksPage() {
     return map;
   }, [sorted, sections]);
 
+  const subtasksFor = (taskId: string) => subtasks.filter((s) => s.taskId === taskId);
   const subtaskCount = (taskId: string) => {
-    const own = subtasks.filter((s) => s.taskId === taskId);
+    const own = subtasksFor(taskId);
     return own.length ? { total: own.length, done: own.filter((s) => s.completed).length } : null;
   };
 
@@ -320,7 +323,10 @@ function TasksPage() {
                       key={t.id}
                       task={t}
                       projectName={projName(t.projectId)}
-                      subtasks={subtaskCount(t.id)}
+                      users={users}
+                      subtasks={subtasksFor(t.id)}
+                      onUpdate={(patch) => update(t.id, patch)}
+                      onToggleSubtask={(id, completed) => updateSubtask(id, { completed })}
                       onOpen={() => setOpenTaskId(t.id)}
                       onDelete={() => {
                         remove(t.id);
@@ -352,67 +358,24 @@ function TasksPage() {
         </DndContext>
       ) : view === "bloco" ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {sorted.map((t) => {
-            const st = subtaskCount(t.id);
-            return (
-              <Card
-                key={t.id}
-                className="cursor-pointer hover:border-primary/40 transition-colors"
-                onClick={() => setOpenTaskId(t.id)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <p
-                      className={cn(
-                        "text-sm font-medium",
-                        isTaskDone(t, sections) && "line-through text-muted-foreground",
-                      )}
-                    >
-                      {t.title}
-                    </p>
-                    <ConfirmDelete
-                      trigger={
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 -mt-1 -mr-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      }
-                      title="Excluir tarefa?"
-                      onConfirm={() => {
-                        remove(t.id);
-                        toast.success("Tarefa excluída.");
-                      }}
-                    />
-                  </div>
-                  {projName(t.projectId) && (
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {projName(t.projectId)}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 mt-3 flex-wrap">
-                    <span className="text-[11px] text-muted-foreground bg-secondary rounded px-2 py-0.5">
-                      {sectionName(t.sectionId)}
-                    </span>
-                    <StatusBadge value={t.priority} />
-                    <AssigneeBadge userId={t.assigneeId} />
-                    {t.dueDate && (
-                      <span className="text-xs text-muted-foreground">{formatDate(t.dueDate)}</span>
-                    )}
-                    {st && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                        <ListChecks className="h-3 w-3" />
-                        {st.done}/{st.total}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {sorted.map((t) => (
+            <TaskBlockCard
+              key={t.id}
+              task={t}
+              projectName={projName(t.projectId)}
+              sectionName={sectionName(t.sectionId)}
+              done={isTaskDone(t, sections)}
+              users={users}
+              subtasks={subtasksFor(t.id)}
+              onUpdate={(patch) => update(t.id, patch)}
+              onToggleSubtask={(id, completed) => updateSubtask(id, { completed })}
+              onOpen={() => setOpenTaskId(t.id)}
+              onDelete={() => {
+                remove(t.id);
+                toast.success("Tarefa excluída.");
+              }}
+            />
+          ))}
           {sorted.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhuma tarefa encontrada.</p>
           )}
@@ -608,16 +571,122 @@ function Column({
   );
 }
 
+type QuickEditProps = {
+  task: Task;
+  users: AppUserRow[];
+  onUpdate: (patch: Partial<Task>) => void;
+};
+
+const priorities: TaskPriority[] = ["Alta", "Média", "Baixa"];
+const inlinePillClass =
+  "h-6 w-auto gap-1 rounded-full border-none bg-secondary px-2 py-0 text-[11px] shadow-none focus:ring-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-40";
+
+function PriorityInlineSelect({ task, onUpdate }: QuickEditProps) {
+  return (
+    <Select value={task.priority} onValueChange={(v) => onUpdate({ priority: v as TaskPriority })}>
+      <SelectTrigger className={inlinePillClass} onClick={(e) => e.stopPropagation()}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent onClick={(e) => e.stopPropagation()}>
+        {priorities.map((p) => (
+          <SelectItem key={p} value={p}>
+            {p}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function AssigneeInlineSelect({ task, users, onUpdate }: QuickEditProps) {
+  return (
+    <Select
+      value={task.assigneeId ?? "none"}
+      onValueChange={(v) => onUpdate({ assigneeId: v === "none" ? undefined : v })}
+    >
+      <SelectTrigger className={inlinePillClass} onClick={(e) => e.stopPropagation()}>
+        <SelectValue placeholder="Responsável" />
+      </SelectTrigger>
+      <SelectContent onClick={(e) => e.stopPropagation()}>
+        <SelectItem value="none">Sem responsável</SelectItem>
+        {users.map((u) => (
+          <SelectItem key={u.id} value={u.id}>
+            {u.name || u.email}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function DueDateInline({ task, onUpdate }: QuickEditProps) {
+  return (
+    <input
+      type="date"
+      value={task.dueDate ?? ""}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => onUpdate({ dueDate: e.target.value || undefined })}
+      className="h-6 rounded-full border-none bg-secondary px-2 py-0 text-[11px] text-foreground/80 [color-scheme:light]"
+    />
+  );
+}
+
+function SubtasksInline({
+  subtasks,
+  onToggle,
+}: {
+  subtasks: Subtask[];
+  onToggle: (id: string, completed: boolean) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  if (subtasks.length === 0) return null;
+  const done = subtasks.filter((s) => s.completed).length;
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <button
+        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground mt-2"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        <ListChecks className="h-3 w-3" />
+        {done}/{subtasks.length} subtarefas
+      </button>
+      {expanded && (
+        <div className="mt-1.5 space-y-1 border-t pt-1.5">
+          {subtasks.map((s) => (
+            <label key={s.id} className="flex items-center gap-2 text-xs cursor-pointer">
+              <Checkbox
+                checked={s.completed}
+                onCheckedChange={(c) => onToggle(s.id, !!c)}
+                className="h-3.5 w-3.5"
+              />
+              <span className={cn(s.completed && "line-through text-muted-foreground")}>
+                {s.title}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TaskCard({
   task,
   projectName,
+  users,
   subtasks,
+  onUpdate,
+  onToggleSubtask,
   onOpen,
   onDelete,
 }: {
   task: Task;
   projectName?: string;
-  subtasks: { total: number; done: number } | null;
+  users: AppUserRow[];
+  subtasks: Subtask[];
+  onUpdate: (patch: Partial<Task>) => void;
+  onToggleSubtask: (id: string, completed: boolean) => void;
   onOpen: () => void;
   onDelete: () => void;
 }) {
@@ -634,25 +703,20 @@ function TaskCard({
             >
               <GripVertical className="h-4 w-4" />
             </button>
-            <button className="flex-1 min-w-0 text-left" onClick={onOpen}>
-              <p className="text-sm font-medium">{task.title}</p>
-              {projectName && (
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">{projectName}</p>
-              )}
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <StatusBadge value={task.priority} />
-                <AssigneeBadge userId={task.assigneeId} />
-                {task.dueDate && (
-                  <span className="text-xs text-muted-foreground">{formatDate(task.dueDate)}</span>
+            <div className="flex-1 min-w-0">
+              <button className="text-left w-full" onClick={onOpen}>
+                <p className="text-sm font-medium">{task.title}</p>
+                {projectName && (
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{projectName}</p>
                 )}
-                {subtasks && (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <ListChecks className="h-3 w-3" />
-                    {subtasks.done}/{subtasks.total}
-                  </span>
-                )}
+              </button>
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                <PriorityInlineSelect task={task} users={users} onUpdate={onUpdate} />
+                <AssigneeInlineSelect task={task} users={users} onUpdate={onUpdate} />
+                <DueDateInline task={task} users={users} onUpdate={onUpdate} />
               </div>
-            </button>
+              <SubtasksInline subtasks={subtasks} onToggle={onToggleSubtask} />
+            </div>
             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
               <ConfirmDelete
                 trigger={
@@ -668,6 +732,65 @@ function TaskCard({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function TaskBlockCard({
+  task,
+  projectName,
+  sectionName,
+  done,
+  users,
+  subtasks,
+  onUpdate,
+  onToggleSubtask,
+  onOpen,
+  onDelete,
+}: {
+  task: Task;
+  projectName?: string;
+  sectionName: string;
+  done: boolean;
+  users: AppUserRow[];
+  subtasks: Subtask[];
+  onUpdate: (patch: Partial<Task>) => void;
+  onToggleSubtask: (id: string, completed: boolean) => void;
+  onOpen: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <Card className="hover:border-primary/40 transition-colors">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-2">
+          <button className="text-left" onClick={onOpen}>
+            <p className={cn("text-sm font-medium", done && "line-through text-muted-foreground")}>
+              {task.title}
+            </p>
+            {projectName && (
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{projectName}</p>
+            )}
+          </button>
+          <ConfirmDelete
+            trigger={
+              <Button variant="ghost" size="icon" className="h-7 w-7 -mt-1 -mr-1">
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+              </Button>
+            }
+            title="Excluir tarefa?"
+            onConfirm={onDelete}
+          />
+        </div>
+        <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+          <span className="text-[11px] text-muted-foreground bg-secondary rounded-full px-2 py-0.5">
+            {sectionName}
+          </span>
+          <PriorityInlineSelect task={task} users={users} onUpdate={onUpdate} />
+          <AssigneeInlineSelect task={task} users={users} onUpdate={onUpdate} />
+          <DueDateInline task={task} users={users} onUpdate={onUpdate} />
+        </div>
+        <SubtasksInline subtasks={subtasks} onToggle={onToggleSubtask} />
+      </CardContent>
+    </Card>
   );
 }
 
