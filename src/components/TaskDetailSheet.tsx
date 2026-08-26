@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, CalendarPlus } from "lucide-react";
+import { DatePickerField } from "@/components/DatePickerField";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +27,7 @@ import {
   sortedSections,
   sortedFields,
   formatDateTime,
+  googleCalendarLink,
 } from "@/lib/storage";
 import { useAppAuth } from "@/hooks/useAppAuth";
 import { useAppUsers } from "@/hooks/useAppUsers";
@@ -190,11 +192,30 @@ export function TaskDetailSheet({
               </Select>
             </F>
             <F label="Prazo">
-              <Input
-                type="date"
-                value={task.dueDate ?? ""}
-                onChange={(e) => updateTask(task.id, { dueDate: e.target.value || undefined })}
-              />
+              <div className="flex items-center gap-1.5">
+                <DatePickerField
+                  value={task.dueDate}
+                  onChange={(v) => updateTask(task.id, { dueDate: v })}
+                  className="flex-1"
+                />
+                {task.dueDate && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    title="Adicionar ao Google Agenda"
+                    asChild
+                  >
+                    <a
+                      href={googleCalendarLink(task.title, task.dueDate, task.description)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <CalendarPlus className="h-4 w-4" />
+                    </a>
+                  </Button>
+                )}
+              </div>
             </F>
             <div className="col-span-2">
               <F label="Projeto">

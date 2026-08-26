@@ -68,6 +68,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { TaskFormDialog } from "@/components/forms/TaskFormDialog";
 import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { ManageFieldsDialog } from "@/components/ManageFieldsDialog";
+import { DatePickerField } from "@/components/DatePickerField";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
 import type { Task, TaskPriority, Subtask } from "@/lib/types";
@@ -621,13 +622,14 @@ function AssigneeInlineSelect({ task, users, onUpdate }: QuickEditProps) {
 
 function DueDateInline({ task, onUpdate }: QuickEditProps) {
   return (
-    <input
-      type="date"
-      value={task.dueDate ?? ""}
-      onClick={(e) => e.stopPropagation()}
-      onChange={(e) => onUpdate({ dueDate: e.target.value || undefined })}
-      className="h-6 rounded-full border-none bg-secondary px-2 py-0 text-[11px] text-foreground/80 [color-scheme:light]"
-    />
+    <div onClick={(e) => e.stopPropagation()}>
+      <DatePickerField
+        value={task.dueDate}
+        onChange={(v) => onUpdate({ dueDate: v })}
+        placeholder="Prazo"
+        className={cn(inlinePillClass, "h-6 px-2 [&_svg]:mr-1")}
+      />
+    </div>
   );
 }
 
