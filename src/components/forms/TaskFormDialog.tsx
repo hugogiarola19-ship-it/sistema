@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePickerField } from "@/components/DatePickerField";
 import { useProjects, useTasks, useTaskSections, sortedSections } from "@/lib/storage";
 import { useAppUsers } from "@/hooks/useAppUsers";
 import type { Task, TaskPriority } from "@/lib/types";
@@ -133,10 +134,10 @@ export function TaskFormDialog({
           </F>
           <div className="grid grid-cols-3 gap-4">
             <F label="Prazo">
-              <Input
-                type="date"
-                value={form.dueDate ?? ""}
-                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+              <DatePickerField
+                value={form.dueDate}
+                onChange={(v) => setForm({ ...form, dueDate: v ?? "" })}
+                className="w-full"
               />
             </F>
             <F label="Prioridade">

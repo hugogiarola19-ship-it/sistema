@@ -420,3 +420,14 @@ export const formatDateTime = (iso?: string) => {
     minute: "2-digit",
   });
 };
+
+/** Link para criar um evento de dia inteiro no Google Agenda a partir de uma data (yyyy-mm-dd). */
+export const googleCalendarLink = (title: string, dateISO: string, details?: string) => {
+  const start = dateISO.replaceAll("-", "");
+  const endDate = new Date(`${dateISO}T00:00:00`);
+  endDate.setDate(endDate.getDate() + 1);
+  const end = endDate.toISOString().slice(0, 10).replaceAll("-", "");
+  const params = new URLSearchParams({ action: "TEMPLATE", text: title, dates: `${start}/${end}` });
+  if (details) params.set("details", details);
+  return `https://www.google.com/calendar/render?${params.toString()}`;
+};
