@@ -15,7 +15,6 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppLayout } from "@/components/AppLayout";
 import { Toaster } from "@/components/ui/sonner";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -78,18 +77,35 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "google", content: "notranslate" },
       { title: "Dashboard — Giarola Engenharia" },
-      { name: "description", content: "Visão geral dos projetos, tarefas e finanças do escritório." },
+      {
+        name: "description",
+        content: "Visão geral dos projetos, tarefas e finanças do escritório.",
+      },
       { property: "og:title", content: "Dashboard — Giarola Engenharia" },
       { name: "twitter:title", content: "Dashboard — Giarola Engenharia" },
-      { property: "og:description", content: "Visão geral dos projetos, tarefas e finanças do escritório." },
-      { name: "twitter:description", content: "Visão geral dos projetos, tarefas e finanças do escritório." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d4960805-79ca-4197-8f47-a28ab2099ab5/id-preview-2c79eca4--a4bee8d2-c475-4ca9-a7f5-01ca606089dd.lovable.app-1780318614658.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d4960805-79ca-4197-8f47-a28ab2099ab5/id-preview-2c79eca4--a4bee8d2-c475-4ca9-a7f5-01ca606089dd.lovable.app-1780318614658.png" },
+      {
+        property: "og:description",
+        content: "Visão geral dos projetos, tarefas e finanças do escritório.",
+      },
+      {
+        name: "twitter:description",
+        content: "Visão geral dos projetos, tarefas e finanças do escritório.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d4960805-79ca-4197-8f47-a28ab2099ab5/id-preview-2c79eca4--a4bee8d2-c475-4ca9-a7f5-01ca606089dd.lovable.app-1780318614658.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d4960805-79ca-4197-8f47-a28ab2099ab5/id-preview-2c79eca4--a4bee8d2-c475-4ca9-a7f5-01ca606089dd.lovable.app-1780318614658.png",
+      },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
@@ -98,7 +114,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -109,7 +128,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR" translate="no" className="notranslate">
       <head>
         <HeadContent />
       </head>
@@ -123,12 +142,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const pathname = useRouterState({ select: s => s.location.pathname });
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isLogin = pathname === "/login";
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isLogin ? <Outlet /> : <AppLayout><Outlet /></AppLayout>}
+      {isLogin ? (
+        <Outlet />
+      ) : (
+        <AppLayout>
+          <Outlet />
+        </AppLayout>
+      )}
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
