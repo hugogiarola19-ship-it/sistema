@@ -18,6 +18,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MyTasksRouteImport } from './routes/my-tasks'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProposalsRouteImport } from './routes/proposals'
+import { Route as SitePortfolioRouteImport } from './routes/site-portfolio'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -71,6 +72,11 @@ const ProposalsRoute = ProposalsRouteImport.update({
   path: '/proposals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitePortfolioRoute = SitePortfolioRouteImport.update({
+  id: '/site-portfolio',
+  path: '/site-portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TasksRoute = TasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/my-tasks': typeof MyTasksRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/proposals': typeof ProposalsRoute
+  '/site-portfolio': typeof SitePortfolioRoute
   '/tasks': typeof TasksRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/my-tasks': typeof MyTasksRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/proposals': typeof ProposalsRoute
+  '/site-portfolio': typeof SitePortfolioRoute
   '/tasks': typeof TasksRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/my-tasks': typeof MyTasksRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/proposals': typeof ProposalsRoute
+  '/site-portfolio': typeof SitePortfolioRoute
   '/tasks': typeof TasksRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/my-tasks'
     | '/projects'
     | '/proposals'
+    | '/site-portfolio'
     | '/tasks'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/my-tasks'
     | '/projects'
     | '/proposals'
+    | '/site-portfolio'
     | '/tasks'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/my-tasks'
     | '/projects'
     | '/proposals'
+    | '/site-portfolio'
     | '/tasks'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -232,6 +244,7 @@ export interface RootRouteChildren {
   MyTasksRoute: typeof MyTasksRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   ProposalsRoute: typeof ProposalsRoute
+  SitePortfolioRoute: typeof SitePortfolioRoute
   TasksRoute: typeof TasksRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -302,6 +315,13 @@ declare module '@tanstack/react-router' {
       path: '/proposals'
       fullPath: '/proposals'
       preLoaderRoute: typeof ProposalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/site-portfolio': {
+      id: '/site-portfolio'
+      path: '/site-portfolio'
+      fullPath: '/site-portfolio'
+      preLoaderRoute: typeof SitePortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tasks': {
@@ -389,6 +409,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyTasksRoute: MyTasksRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   ProposalsRoute: ProposalsRoute,
+  SitePortfolioRoute: SitePortfolioRoute,
   TasksRoute: TasksRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
