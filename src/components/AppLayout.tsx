@@ -13,6 +13,7 @@ import {
   LogOut,
   ShieldCheck,
   Lock,
+  Globe,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const nav: NavItem[] = [
   { to: "/tasks", label: "Quadro de tarefas", icon: ListChecks, permission: "tasks" },
   { to: "/financial", label: "Financeiro", icon: Wallet, permission: "financial" },
   { to: "/proposals", label: "Propostas", icon: FileText, permission: "proposals" },
+  { to: "/site-portfolio", label: "Portfólio do Site", icon: Globe, adminOnly: true },
   { to: "/admin", label: "Administração", icon: ShieldCheck, adminOnly: true },
 ];
 
