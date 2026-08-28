@@ -20,15 +20,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAppAuth } from "@/hooks/useAppAuth";
 import { requiredPermission, type Permission } from "@/lib/permissions";
 import { EmptyState } from "@/components/PageHeader";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-const nav: Array<{
+type NavItem = {
   to: string;
   label: string;
   icon: typeof LayoutDashboard;
   exact?: boolean;
   permission?: Permission;
   adminOnly?: boolean;
-}> = [
+};
+
+const nav: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/my-tasks", label: "Minhas tarefas", icon: ListTodo, permission: "tasks" },
   { to: "/projects", label: "Projetos", icon: FolderKanban, permission: "projects" },
@@ -55,9 +58,45 @@ function Brand({ collapsed }: { collapsed?: boolean }) {
   );
 }
 
+function NavLinks({
+  items,
+  isActive,
+  onNavigate,
+}: {
+  items: NavItem[];
+  isActive: (to: string, exact?: boolean) => boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <>
+      {items.map((item) => {
+        const Icon = item.icon;
+        const active = isActive(item.to, item.exact);
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+              active
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+            )}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const router = useRouter();
   const qc = useQueryClient();
   const { user, loading, can } = useAppAuth();
@@ -75,6 +114,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
     if (!loading && !user)
       router.navigate({ to: "/login", search: { next: undefined }, replace: true });
   }, [loading, user, router]);
+
+  useEffect(() => setMobileNavOpen(false), [pathname]);
 
   const visibleNav = nav.filter((item) => {
     if (item.adminOnly) return !!user?.isAdmin;
@@ -104,25 +145,28 @@ export function AppLayout({ children }: { children: ReactNode }) {
       >
         <Brand collapsed={collapsed} />
         <nav className="flex-1 px-2 space-y-1">
-          {visibleNav.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.to, item.exact);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+          {collapsed ? (
+            visibleNav.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.to, item.exact);
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                    active
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                </Link>
+              );
+            })
+          ) : (
+            <NavLinks items={visibleNav} isActive={isActive} />
+          )}
         </nav>
         <button
           onClick={handleLogout}
@@ -145,8 +189,48 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </button>
       </aside>
 
+      {/* Top header — mobile */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between bg-sidebar text-sidebar-foreground border-b border-sidebar-border px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent text-accent-foreground font-bold text-sm">
+            GE
+          </div>
+          <span className="text-sm font-semibold">Giarola Engenharia</span>
+        </div>
+        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+          <SheetTrigger asChild>
+            <button
+              aria-label="Abrir menu"
+              className="inline-flex items-center justify-center rounded-md p-2 text-sidebar-foreground hover:bg-sidebar-accent/60"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            className="w-64 bg-sidebar text-sidebar-foreground p-0 flex flex-col border-sidebar-border"
+          >
+            <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+            <Brand />
+            <nav className="flex-1 px-2 space-y-1 mt-2">
+              <NavLinks
+                items={visibleNav}
+                isActive={isActive}
+                onNavigate={() => setMobileNavOpen(false)}
+              />
+            </nav>
+            <button
+              onClick={handleLogout}
+              className="m-3 inline-flex items-center justify-center gap-1 rounded-md border border-sidebar-border/60 px-2 py-1.5 text-xs text-sidebar-foreground/80 hover:bg-sidebar-accent"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Sair
+            </button>
+          </SheetContent>
+        </Sheet>
+      </header>
+
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
+      <div className="flex-1 flex flex-col min-w-0 pt-14 md:pt-0">
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
           {blocked ? (
             <EmptyState
@@ -159,30 +243,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
           )}
         </main>
       </div>
-
-      {/* Bottom nav — mobile */}
-      <nav
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-sidebar text-sidebar-foreground border-t border-sidebar-border grid"
-        style={{ gridTemplateColumns: `repeat(${visibleNav.length}, minmax(0, 1fr))` }}
-      >
-        {visibleNav.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.to, item.exact);
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "flex flex-col items-center justify-center py-2 text-[10px] gap-0.5",
-                active ? "text-accent" : "text-sidebar-foreground/70",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
     </div>
   );
 }
