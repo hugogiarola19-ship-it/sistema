@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import logoFull from "@/assets/logo-full.png";
 import logoIcon from "@/assets/logo-icon.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppAuth } from "@/hooks/useAppAuth";
@@ -48,15 +47,13 @@ const nav: NavItem[] = [
 
 function Brand({ collapsed }: { collapsed?: boolean }) {
   return (
-    <div className="flex items-center px-4 py-5">
-      {collapsed ? (
-        <img src={logoIcon} alt="Giarola Engenharia" className="h-9 w-9 object-contain" />
-      ) : (
-        <img
-          src={logoFull}
-          alt="Giarola Engenharia — Engenheiro Estrutural"
-          className="h-9 w-auto object-contain"
-        />
+    <div className="flex items-center gap-2 px-4 py-5">
+      <img src={logoIcon} alt="Hugo Giarola" className="h-9 w-9 shrink-0 object-contain" />
+      {!collapsed && (
+        <div className="leading-tight">
+          <div className="text-sm font-semibold text-sidebar-foreground">Hugo Giarola</div>
+          <div className="text-[11px] text-sidebar-foreground/60">Engenheiro Estrutural</div>
+        </div>
       )}
     </div>
   );
@@ -195,12 +192,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Top header — mobile */}
       <header className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between bg-sidebar text-sidebar-foreground border-b border-sidebar-border px-3 py-2.5">
-        <div className="flex items-center">
-          <img
-            src={logoFull}
-            alt="Giarola Engenharia — Engenheiro Estrutural"
-            className="h-7 w-auto object-contain"
-          />
+        <div className="flex items-center gap-2">
+          <img src={logoIcon} alt="Hugo Giarola" className="h-7 w-7 shrink-0 object-contain" />
+          <div className="leading-tight">
+            <div className="text-sm font-semibold">Hugo Giarola</div>
+            <div className="text-[10px] text-sidebar-foreground/60">Engenheiro Estrutural</div>
+          </div>
         </div>
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <SheetTrigger asChild>

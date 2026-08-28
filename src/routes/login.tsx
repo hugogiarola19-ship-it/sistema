@@ -93,10 +93,10 @@ function LoginPage() {
         className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-sm space-y-5"
       >
         <div className="flex items-center gap-3">
-          <img src={logoIcon} alt="Giarola Engenharia" className="h-10 w-10 object-contain" />
+          <img src={logoIcon} alt="Hugo Giarola" className="h-10 w-10 object-contain" />
           <div className="leading-tight">
-            <h1 className="text-base font-semibold text-foreground">Giarola Engenharia</h1>
-            <p className="text-xs text-muted-foreground">Painel do Escritório</p>
+            <h1 className="text-base font-semibold text-foreground">Hugo Giarola</h1>
+            <p className="text-xs text-muted-foreground">Engenheiro Estrutural</p>
           </div>
         </div>
 
