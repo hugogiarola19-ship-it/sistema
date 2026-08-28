@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import logoFull from "@/assets/logo-full.png";
+import logoIcon from "@/assets/logo-icon.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppAuth } from "@/hooks/useAppAuth";
 import { requiredPermission, type Permission } from "@/lib/permissions";
@@ -46,15 +48,15 @@ const nav: NavItem[] = [
 
 function Brand({ collapsed }: { collapsed?: boolean }) {
   return (
-    <div className="flex items-center gap-2 px-4 py-5">
-      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent text-accent-foreground font-bold">
-        GE
-      </div>
-      {!collapsed && (
-        <div className="leading-tight">
-          <div className="text-sm font-semibold text-sidebar-foreground">Giarola Engenharia</div>
-          <div className="text-[11px] text-sidebar-foreground/60">Painel do Escritório</div>
-        </div>
+    <div className="flex items-center px-4 py-5">
+      {collapsed ? (
+        <img src={logoIcon} alt="Giarola Engenharia" className="h-9 w-9 object-contain" />
+      ) : (
+        <img
+          src={logoFull}
+          alt="Giarola Engenharia — Engenheiro Estrutural"
+          className="h-9 w-auto object-contain"
+        />
       )}
     </div>
   );
@@ -193,11 +195,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Top header — mobile */}
       <header className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between bg-sidebar text-sidebar-foreground border-b border-sidebar-border px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent text-accent-foreground font-bold text-sm">
-            GE
-          </div>
-          <span className="text-sm font-semibold">Giarola Engenharia</span>
+        <div className="flex items-center">
+          <img
+            src={logoFull}
+            alt="Giarola Engenharia — Engenheiro Estrutural"
+            className="h-7 w-auto object-contain"
+          />
         </div>
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <SheetTrigger asChild>

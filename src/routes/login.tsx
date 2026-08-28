@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { bootstrapAdmin, hasAnyUser } from "@/lib/admin.functions";
+import logoIcon from "@/assets/logo-icon.png";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -14,9 +15,15 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Entrar — Giarola Engenharia" },
-      { name: "description", content: "Acesso restrito ao painel de gestão do escritório Giarola Engenharia." },
+      {
+        name: "description",
+        content: "Acesso restrito ao painel de gestão do escritório Giarola Engenharia.",
+      },
       { property: "og:title", content: "Entrar — Giarola Engenharia" },
-      { property: "og:description", content: "Acesso restrito ao painel de gestão do escritório Giarola Engenharia." },
+      {
+        property: "og:description",
+        content: "Acesso restrito ao painel de gestão do escritório Giarola Engenharia.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -36,7 +43,6 @@ function LoginPage() {
   const checkUsers = useServerFn(hasAnyUser);
   const createFirstAdmin = useServerFn(bootstrapAdmin);
 
-
   const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -45,7 +51,9 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    checkUsers().then(r => setNeedsSetup(!r.any)).catch(() => setNeedsSetup(false));
+    checkUsers()
+      .then((r) => setNeedsSetup(!r.any))
+      .catch(() => setNeedsSetup(false));
   }, [checkUsers]);
 
   async function onSubmit(e: React.FormEvent) {
@@ -71,7 +79,6 @@ function LoginPage() {
         return;
       }
       await router.navigate({ to: "/" });
-
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível entrar.");
     } finally {
@@ -86,9 +93,7 @@ function LoginPage() {
         className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-sm space-y-5"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent font-bold text-accent-foreground">
-            GE
-          </div>
+          <img src={logoIcon} alt="Giarola Engenharia" className="h-10 w-10 object-contain" />
           <div className="leading-tight">
             <h1 className="text-base font-semibold text-foreground">Giarola Engenharia</h1>
             <p className="text-xs text-muted-foreground">Painel do Escritório</p>
@@ -104,7 +109,7 @@ function LoginPage() {
         {needsSetup && (
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
-            <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
         )}
 
@@ -114,7 +119,7 @@ function LoginPage() {
             id="email"
             type="email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             autoComplete="username"
             required
           />
@@ -126,7 +131,7 @@ function LoginPage() {
             id="password"
             type="password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
             minLength={6}
             required
