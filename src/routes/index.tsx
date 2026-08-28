@@ -46,13 +46,15 @@ function Metric({
   return (
     <Card>
       <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-            <p className="text-2xl font-semibold mt-1">{value}</p>
-            {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
+        <div className="flex items-start justify-between gap-2 min-w-0">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground truncate">
+              {label}
+            </p>
+            <p className="text-2xl font-semibold mt-1 truncate">{value}</p>
+            {hint && <p className="text-xs text-muted-foreground mt-1 truncate">{hint}</p>}
           </div>
-          <div className="h-9 w-9 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+          <div className="h-9 w-9 shrink-0 rounded-md bg-primary/10 text-primary flex items-center justify-center">
             <Icon className="h-5 w-5" />
           </div>
         </div>
@@ -106,7 +108,7 @@ function Dashboard() {
     <div>
       <PageHeader title="Bom dia, Engenheiro" description="Resumo de hoje no escritório." />
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         <Metric
           icon={FolderKanban}
           label="Projetos ativos"
@@ -133,15 +135,15 @@ function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Projetos em andamento</CardTitle>
-            <Button asChild variant="ghost" size="sm">
+      <div className="grid gap-6 lg:grid-cols-3 min-w-0">
+        <Card className="lg:col-span-2 min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 min-w-0">
+            <CardTitle className="text-base truncate min-w-0">Projetos em andamento</CardTitle>
+            <Button asChild variant="ghost" size="sm" className="shrink-0">
               <Link to="/projects">Ver todos</Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 min-w-0">
             {active.length === 0 ? (
               <EmptyState
                 icon={FolderKanban}
@@ -158,23 +160,23 @@ function Dashboard() {
                   key={p.id}
                   to="/projects/$id"
                   params={{ id: p.id }}
-                  className="block rounded-lg border p-4 hover:bg-secondary/40 transition-colors"
+                  className="block min-w-0 rounded-lg border p-4 hover:bg-secondary/40 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3 min-w-0">
                     <div className="min-w-0">
                       <p className="font-medium truncate">{p.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
                         {clientName(p.clientId)} · prazo {formatDate(p.deadline)}
                       </p>
                     </div>
-                    <StatusBadge value={p.status} />
+                    <StatusBadge value={p.status} className="self-start shrink-0" />
                   </div>
-                  <div className="mt-3 flex items-center gap-3">
+                  <div className="mt-3 flex items-center gap-3 min-w-0">
                     <Progress
                       value={projectProgress(tasks, sections, p.id)}
-                      className="h-2 flex-1"
+                      className="h-2 flex-1 min-w-0"
                     />
-                    <span className="text-xs font-medium tabular-nums w-9 text-right">
+                    <span className="text-xs font-medium tabular-nums w-9 shrink-0 text-right">
                       {projectProgress(tasks, sections, p.id)}%
                     </span>
                   </div>
@@ -184,12 +186,12 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          <Card>
+        <div className="space-y-6 min-w-0">
+          <Card className="min-w-0">
             <CardHeader>
               <CardTitle className="text-base">Resumo financeiro</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
+            <CardContent className="space-y-2 text-sm min-w-0">
               <Row label="Receita prevista" value={formatBRL(expected)} />
               <Row label="Recebido" value={formatBRL(received)} accent="success" />
               <Row label="A receber" value={formatBRL(pending)} accent="warning" />
@@ -200,27 +202,32 @@ function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Tarefas da semana</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+          <Card className="min-w-0">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 min-w-0">
+              <CardTitle className="text-base truncate min-w-0">Tarefas da semana</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground shrink-0" />
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 min-w-0">
               {weeklyTasks.length === 0 && (
                 <p className="text-sm text-muted-foreground">Sem tarefas marcadas.</p>
               )}
               {weeklyTasks.map((t) => {
                 const done = isTaskDone(t, sections);
                 return (
-                  <label key={t.id} className="flex items-start gap-3 text-sm cursor-pointer">
+                  <label
+                    key={t.id}
+                    className="flex items-start gap-3 text-sm cursor-pointer min-w-0"
+                  >
                     <Checkbox
                       checked={done}
                       onCheckedChange={(c) =>
                         updateTask(t.id, { sectionId: c ? doneSection.id : todoSection.id })
                       }
-                      className="mt-0.5"
+                      className="mt-0.5 shrink-0"
                     />
-                    <span className={done ? "line-through text-muted-foreground" : ""}>
+                    <span
+                      className={`min-w-0 break-words ${done ? "line-through text-muted-foreground" : ""}`}
+                    >
                       {t.title}
                     </span>
                   </label>
@@ -254,9 +261,13 @@ function Row({
           ? "text-destructive"
           : "";
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={`tabular-nums ${bold ? "font-semibold" : ""} ${c}`}>{value}</span>
+    <div className="flex items-center justify-between gap-2 min-w-0">
+      <span className="text-muted-foreground truncate min-w-0">{label}</span>
+      <span
+        className={`tabular-nums shrink-0 whitespace-nowrap ${bold ? "font-semibold" : ""} ${c}`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
