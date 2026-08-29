@@ -77,6 +77,36 @@ function FinancialPage() {
   const expenses = paid("Despesa");
   const investments = paid("Investimento");
   const proLabore = paid("Pró-labore");
+
+  const pendingForMonth = (y: number, m: number) => {
+    const tx = items.filter((t) => {
+      const d = new Date(t.date);
+      return d.getMonth() === m && d.getFullYear() === y && t.status === "Pendente";
+    });
+    const sum = (type: TxType) =>
+      tx.filter((t) => t.type === type).reduce((s, t) => s + t.value, 0);
+    const despesaTotal = sum("Despesa");
+    const taxTotal = tx
+      .filter(
+        (t) => t.type === "Despesa" && TAX_EXPENSE_CATEGORIES.includes(t.expenseCategory ?? ""),
+      )
+      .reduce((s, t) => s + t.value, 0);
+    const aReceber = sum("Receita");
+    const investimentosPend = sum("Investimento");
+    const proLaborePend = sum("Pró-labore");
+    return {
+      aReceber,
+      despesasOperacionais: despesaTotal - taxTotal,
+      impostos: taxTotal,
+      investimentos: investimentosPend,
+      proLabore: proLaborePend,
+      saldoPrevisto: aReceber - despesaTotal - investimentosPend - proLaborePend,
+    };
+  };
+  const nextCursor = new Date(cursor.y, cursor.m + 1, 1);
+  const flowThisMonth = pendingForMonth(cursor.y, cursor.m);
+  const flowNextMonth = pendingForMonth(nextCursor.getFullYear(), nextCursor.getMonth());
+  const nextMonthLabel = nextCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const taxes = monthTx
     .filter(
       (t) =>
@@ -154,6 +184,67 @@ function FinancialPage() {
         <Metric label="Investimentos" value={formatBRL(investments)} accent="primary" />
         <Metric label="Pró-labore" value={formatBRL(proLabore)} accent="warning" />
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">Fluxo de caixa projetado</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Valores ainda pendentes (não pagos/recebidos) lançados para cada mês.
+          </p>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[420px]">
+            <thead>
+              <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="text-left font-medium py-1.5">Categoria</th>
+                <th className="text-right font-medium py-1.5 capitalize">{monthLabel}</th>
+                <th className="text-right font-medium py-1.5 capitalize">{nextMonthLabel}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <FlowRow
+                label="A receber"
+                a={flowThisMonth.aReceber}
+                b={flowNextMonth.aReceber}
+                accent="success"
+              />
+              <FlowRow
+                label="Despesas"
+                a={-flowThisMonth.despesasOperacionais}
+                b={-flowNextMonth.despesasOperacionais}
+                accent="destructive"
+              />
+              <FlowRow
+                label="Impostos"
+                a={-flowThisMonth.impostos}
+                b={-flowNextMonth.impostos}
+                accent="destructive"
+              />
+              <FlowRow
+                label="Investimentos"
+                a={-flowThisMonth.investimentos}
+                b={-flowNextMonth.investimentos}
+                accent="primary"
+              />
+              <FlowRow
+                label="Pró-labore"
+                a={-flowThisMonth.proLabore}
+                b={-flowNextMonth.proLabore}
+                accent="warning"
+              />
+              <tr className="border-t">
+                <td className="py-2 font-semibold">Saldo previsto</td>
+                <td className="py-2 text-right font-semibold tabular-nums">
+                  {formatBRL(flowThisMonth.saldoPrevisto)}
+                </td>
+                <td className="py-2 text-right font-semibold tabular-nums">
+                  {formatBRL(flowNextMonth.saldoPrevisto)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -240,6 +331,34 @@ function FinancialPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function FlowRow({
+  label,
+  a,
+  b,
+  accent,
+}: {
+  label: string;
+  a: number;
+  b: number;
+  accent: "success" | "warning" | "destructive" | "primary";
+}) {
+  const c =
+    accent === "success"
+      ? "text-success"
+      : accent === "warning"
+        ? "text-warning-foreground"
+        : accent === "primary"
+          ? "text-primary"
+          : "text-destructive";
+  return (
+    <tr className="border-b last:border-0">
+      <td className="py-1.5 text-muted-foreground">{label}</td>
+      <td className={`py-1.5 text-right tabular-nums ${c}`}>{formatBRL(a)}</td>
+      <td className={`py-1.5 text-right tabular-nums ${c}`}>{formatBRL(b)}</td>
+    </tr>
   );
 }
 
