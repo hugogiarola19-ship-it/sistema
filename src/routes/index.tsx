@@ -93,7 +93,13 @@ function Dashboard() {
   const expenses = monthTx
     .filter((t) => t.type === "Despesa" && t.status === "Pago")
     .reduce((s, t) => s + t.value, 0);
-  const result = received - expenses;
+  const investments = monthTx
+    .filter((t) => t.type === "Investimento" && t.status === "Pago")
+    .reduce((s, t) => s + t.value, 0);
+  const proLabore = monthTx
+    .filter((t) => t.type === "Pró-labore" && t.status === "Pago")
+    .reduce((s, t) => s + t.value, 0);
+  const result = received - expenses - investments - proLabore;
 
   const activeClients = useMemo(() => {
     const ids = new Set(active.map((p) => p.clientId));
@@ -196,6 +202,8 @@ function Dashboard() {
               <Row label="Recebido" value={formatBRL(received)} accent="success" />
               <Row label="A receber" value={formatBRL(pending)} accent="warning" />
               <Row label="Despesas" value={formatBRL(expenses)} accent="destructive" />
+              <Row label="Investimentos" value={formatBRL(investments)} accent="destructive" />
+              <Row label="Pró-labore" value={formatBRL(proLabore)} accent="destructive" />
               <div className="border-t pt-2 mt-2">
                 <Row label="Resultado" value={formatBRL(result)} bold />
               </div>

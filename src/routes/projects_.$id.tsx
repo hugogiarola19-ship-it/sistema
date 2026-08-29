@@ -61,6 +61,13 @@ function ProjectDetail() {
   const installments = transactions
     .filter((t) => t.projectId === project.id && t.installment != null)
     .sort((a, b) => (a.installment ?? 0) - (b.installment ?? 0));
+  const directCosts = transactions
+    .filter(
+      (t) => t.projectId === project.id && (t.type === "Despesa" || t.type === "Investimento"),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const totalCost = directCosts.reduce((s, t) => s + t.value, 0);
+  const margin = project.value - totalCost;
 
   return (
     <div>
@@ -134,6 +141,50 @@ function ProjectDetail() {
                   <div className="sm:col-span-2">
                     <Progress value={progress} className="h-2" />
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Custo do projeto</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <Info label="Receita" value={formatBRL(project.value)} />
+                    <Info label="Custos diretos" value={formatBRL(totalCost)} />
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Margem
+                      </p>
+                      <p
+                        className={`font-medium ${margin >= 0 ? "text-success" : "text-destructive"}`}
+                      >
+                        {formatBRL(margin)}
+                      </p>
+                    </div>
+                  </div>
+                  {directCosts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma despesa ou investimento lançado neste projeto ainda.
+                    </p>
+                  ) : (
+                    <div className="space-y-2 border-t pt-3">
+                      {directCosts.map((t) => (
+                        <div key={t.id} className="flex items-center justify-between gap-3 text-sm">
+                          <div className="min-w-0">
+                            <p className="truncate">{t.description}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {formatDate(t.date)} · {t.type} ·{" "}
+                              {t.expenseCategory ?? t.investmentCategory ?? "—"}
+                            </p>
+                          </div>
+                          <span className="font-medium tabular-nums shrink-0 text-destructive">
+                            − {formatBRL(t.value)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
