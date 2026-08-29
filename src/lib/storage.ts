@@ -9,6 +9,9 @@ import type {
   TaskFieldDef,
   Transaction,
   Proposal,
+  CreditCard,
+  CardPurchase,
+  CardInvoicePayment,
 } from "./types";
 
 const KEYS = {
@@ -24,6 +27,9 @@ const KEYS = {
   expenseCategories: "hg.expenseCategories",
   revenueCategories: "hg.revenueCategories",
   investmentCategories: "hg.investmentCategories",
+  creditCards: "hg.creditCards",
+  cardPurchases: "hg.cardPurchases",
+  cardInvoicePayments: "hg.cardInvoicePayments",
   seeded: "hg.seeded.v3",
 } as const;
 
@@ -349,6 +355,10 @@ export const useTaskComments = () => useCollection<TaskComment>(KEYS.taskComment
 export const useTaskFields = () => useCollection<TaskFieldDef>(KEYS.taskFields);
 export const useTransactions = () => useCollection<Transaction>(KEYS.transactions);
 export const useProposals = () => useCollection<Proposal>(KEYS.proposals);
+export const useCreditCards = () => useCollection<CreditCard>(KEYS.creditCards);
+export const useCardPurchases = () => useCollection<CardPurchase>(KEYS.cardPurchases);
+export const useCardInvoicePayments = () =>
+  useCollection<CardInvoicePayment>(KEYS.cardInvoicePayments);
 
 /** Uma tarefa está concluída quando está numa seção marcada como "de conclusão". */
 export const isTaskDone = (task: Task, sections: TaskSection[]) =>
@@ -391,6 +401,7 @@ export const VARIABLE_EXPENSE_CATEGORIES = [
   "Levantamento",
   "Topografia",
   "Consultoria especializada",
+  "Fatura cartão de crédito",
 ];
 
 /** Categorias de imposto — usadas para destacar a carga tributária separadamente das demais despesas. */
@@ -497,6 +508,89 @@ export const formatDate = (iso?: string) => {
   const d = new Date(iso);
   return d.toLocaleDateString("pt-BR");
 };
+
+/**
+ * Em qual fatura (ano/mês) uma parcela específica de uma compra no cartão cai.
+ * Compras feitas até o dia de fechamento entram na fatura daquele mês;
+ * depois do fechamento, entram na fatura do mês seguinte. Cada parcela
+ * subsequente cai um mês depois da anterior.
+ */
+export function invoiceMonthForInstallment(
+  purchaseDate: string,
+  closingDay: number,
+  installmentIndex: number,
+): { year: number; month: number } {
+  const d = new Date(`${purchaseDate}T00:00:00`);
+  let month = d.getMonth() + (d.getDate() > closingDay ? 1 : 0) + installmentIndex;
+  let year = d.getFullYear();
+  year += Math.floor(month / 12);
+  month = ((month % 12) + 12) % 12;
+  return { year, month };
+}
+
+/** Valor total da fatura de um cartão num mês/ano específico. */
+export function invoiceTotalForMonth(
+  purchases: CardPurchase[],
+  cardId: string,
+  closingDay: number,
+  year: number,
+  month: number,
+): number {
+  let total = 0;
+  for (const p of purchases) {
+    if (p.cardId !== cardId) continue;
+    const perInstallment = p.value / p.installments;
+    for (let i = 0; i < p.installments; i++) {
+      const im = invoiceMonthForInstallment(p.purchaseDate, closingDay, i);
+      if (im.year === year && im.month === month) total += perInstallment;
+    }
+  }
+  return total;
+}
+
+/** Lista as parcelas (compra + valor da parcela) que compõem a fatura de um cartão num mês/ano. */
+export function invoiceItemsForMonth(
+  purchases: CardPurchase[],
+  cardId: string,
+  closingDay: number,
+  year: number,
+  month: number,
+) {
+  const items: { purchase: CardPurchase; installmentNumber: number; value: number }[] = [];
+  for (const p of purchases) {
+    if (p.cardId !== cardId) continue;
+    const perInstallment = p.value / p.installments;
+    for (let i = 0; i < p.installments; i++) {
+      const im = invoiceMonthForInstallment(p.purchaseDate, closingDay, i);
+      if (im.year === year && im.month === month) {
+        items.push({ purchase: p, installmentNumber: i + 1, value: perInstallment });
+      }
+    }
+  }
+  return items;
+}
+
+/** Soma de todas as parcelas de um cartão ainda não cobertas por uma fatura paga (proxy de limite utilizado). */
+export function outstandingCardBalance(
+  purchases: CardPurchase[],
+  payments: CardInvoicePayment[],
+  cardId: string,
+  closingDay: number,
+) {
+  const paidMonths = new Set(
+    payments.filter((p) => p.cardId === cardId).map((p) => `${p.year}-${p.month}`),
+  );
+  let total = 0;
+  for (const p of purchases) {
+    if (p.cardId !== cardId) continue;
+    const perInstallment = p.value / p.installments;
+    for (let i = 0; i < p.installments; i++) {
+      const im = invoiceMonthForInstallment(p.purchaseDate, closingDay, i);
+      if (!paidMonths.has(`${im.year}-${im.month}`)) total += perInstallment;
+    }
+  }
+  return total;
+}
 
 export const formatDateTime = (iso?: string) => {
   if (!iso) return "—";

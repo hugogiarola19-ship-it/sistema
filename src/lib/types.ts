@@ -23,6 +23,8 @@ export interface Client {
   email: string;
   city: string;
   notes?: string;
+  /** data em que o cliente foi cadastrado, usada para calcular custo de aquisição (CAC) */
+  createdAt?: string;
 }
 
 export interface Project {
@@ -123,4 +125,40 @@ export interface Proposal {
   pdfName?: string;
   /** conteúdo do PDF anexado, como data URL (base64) */
   pdfDataUrl?: string;
+}
+
+export interface CreditCard {
+  id: string;
+  name: string;
+  limit: number;
+  /** dia do mês em que a fatura fecha (1-31) */
+  closingDay: number;
+  /** dia do mês em que a fatura vence (1-31) */
+  dueDay: number;
+  responsible?: string;
+}
+
+export interface CardPurchase {
+  id: string;
+  cardId: string;
+  description: string;
+  category?: string;
+  projectId?: string;
+  /** valor total da compra (soma de todas as parcelas) */
+  value: number;
+  /** número total de parcelas (1 = à vista) */
+  installments: number;
+  purchaseDate: string;
+}
+
+/** Registro de que a fatura de um cartão, num mês/ano específico, foi paga. */
+export interface CardInvoicePayment {
+  id: string;
+  cardId: string;
+  year: number;
+  /** 0-11 */
+  month: number;
+  /** id do lançamento de Despesa criado ao marcar a fatura como paga */
+  transactionId: string;
+  paidDate: string;
 }

@@ -1,14 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Trash2, Wallet } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash2,
+  Wallet,
+  CreditCard as CreditCardIcon,
+} from "lucide-react";
 import {
   useProjects,
+  useClients,
   useTransactions,
   useExpenseCategories,
   useRevenueCategories,
   useInvestmentCategories,
   TAX_EXPENSE_CATEGORIES,
   FIXED_EXPENSE_CATEGORIES,
+  MARKETING_EXPENSE_CATEGORIES,
   uid,
   formatBRL,
   formatDate,
@@ -54,6 +63,7 @@ export const Route = createFileRoute("/financial")({
 function FinancialPage() {
   const { items, remove } = useTransactions();
   const { items: projects } = useProjects();
+  const { items: clients } = useClients();
   const today = new Date();
   const [cursor, setCursor] = useState({ y: today.getFullYear(), m: today.getMonth() });
   const [view, setView] = useViewMode("financial", "lista");
@@ -152,6 +162,21 @@ function FinancialPage() {
           ? "Dentro da faixa recomendada."
           : "Reserva completa.";
 
+  const marketingSpend = monthTx
+    .filter(
+      (t) =>
+        t.type === "Despesa" &&
+        t.status === "Pago" &&
+        MARKETING_EXPENSE_CATEGORIES.includes(t.expenseCategory ?? ""),
+    )
+    .reduce((s, t) => s + t.value, 0);
+  const newClientsThisMonth = clients.filter((c) => {
+    if (!c.createdAt) return false;
+    const d = new Date(c.createdAt);
+    return d.getMonth() === cursor.m && d.getFullYear() === cursor.y;
+  }).length;
+  const cac = newClientsThisMonth > 0 ? marketingSpend / newClientsThisMonth : null;
+
   const monthLabel = new Date(cursor.y, cursor.m, 1).toLocaleDateString("pt-BR", {
     month: "long",
     year: "numeric",
@@ -185,6 +210,11 @@ function FinancialPage() {
         description="Acompanhamento mensal do escritório."
         actions={
           <>
+            <Button variant="outline" asChild>
+              <Link to="/financial/cards">
+                <CreditCardIcon className="h-4 w-4 mr-1" /> Cartões
+              </Link>
+            </Button>
             <ViewToggle value={view} onChange={setView} />
             <TransactionFormDialog
               trigger={
@@ -259,6 +289,37 @@ function FinancialPage() {
         <Metric label="Investimentos" value={formatBRL(investments)} accent="primary" />
         <Metric label="Pró-labore" value={formatBRL(proLabore)} accent="warning" />
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">Marketing e comercial</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Quanto o escritório investe para conseguir clientes.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Gasto em marketing
+              </p>
+              <p className="font-medium">{formatBRL(marketingSpend)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Novos clientes
+              </p>
+              <p className="font-medium">{newClientsThisMonth}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Custo por cliente (CAC)
+              </p>
+              <p className="font-medium">{cac != null ? formatBRL(cac) : "—"}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="mb-6">
         <CardHeader>
