@@ -32,7 +32,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -458,7 +460,7 @@ function CreditCardFormDialog({
 function CardPurchaseFormDialog({ trigger, cardId }: { trigger: React.ReactNode; cardId: string }) {
   const { add } = useCardPurchases();
   const { items: projects } = useProjects();
-  const { categories } = useExpenseCategories();
+  const { groups: categoryGroups } = useExpenseCategories();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     description: "",
@@ -545,10 +547,15 @@ function CardPurchaseFormDialog({ trigger, cardId }: { trigger: React.ReactNode;
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Sem categoria</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
+                  {categoryGroups.map((g) => (
+                    <SelectGroup key={g.group}>
+                      <SelectLabel>{g.group}</SelectLabel>
+                      {g.items.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>

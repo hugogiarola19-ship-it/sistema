@@ -110,6 +110,8 @@ export interface Transaction {
   revenueCategory?: string;
   /** categoria do investimento (apenas quando type = Investimento) */
   investmentCategory?: string;
+  /** meio de recebimento (apenas quando type = Receita): Pix, Boleto, Transferência, etc. */
+  paymentMethod?: string;
   /** índice da parcela (1-based) quando o lançamento vem do parcelamento de um projeto */
   installment?: number;
 }
