@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProjectDocuments } from "@/components/ProjectDocuments";
 
-export const Route = createFileRoute("/projects/$id")({
+export const Route = createFileRoute("/projects_/$id")({
   component: ProjectDetail,
 });
 

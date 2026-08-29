@@ -22,8 +22,8 @@ import { Route as SitePortfolioRouteImport } from './routes/site-portfolio'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
-import { Route as ClientsIdRouteImport } from './routes/clients.$id'
-import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
+import { Route as ClientsIdRouteImport } from './routes/clients_.$id'
+import { Route as ProjectsIdRouteImport } from './routes/projects_.$id'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 
@@ -95,14 +95,14 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     getParentRoute: () => rootRouteImport,
   } as any)
 const ClientsIdRoute = ClientsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ClientsRoute,
+  id: '/clients_/$id',
+  path: '/clients/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsIdRoute = ProjectsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ProjectsRoute,
+  id: '/projects_/$id',
+  path: '/projects/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
@@ -119,12 +119,12 @@ const Char91DotmcpChar93InvokeToolToolRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/clients': typeof ClientsRouteWithChildren
+  '/clients': typeof ClientsRoute
   '/financial': typeof FinancialRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/my-tasks': typeof MyTasksRoute
-  '/projects': typeof ProjectsRouteWithChildren
+  '/projects': typeof ProjectsRoute
   '/proposals': typeof ProposalsRoute
   '/site-portfolio': typeof SitePortfolioRoute
   '/tasks': typeof TasksRoute
@@ -138,12 +138,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/clients': typeof ClientsRouteWithChildren
+  '/clients': typeof ClientsRoute
   '/financial': typeof FinancialRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/my-tasks': typeof MyTasksRoute
-  '/projects': typeof ProjectsRouteWithChildren
+  '/projects': typeof ProjectsRoute
   '/proposals': typeof ProposalsRoute
   '/site-portfolio': typeof SitePortfolioRoute
   '/tasks': typeof TasksRoute
@@ -158,19 +158,19 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/clients': typeof ClientsRouteWithChildren
+  '/clients': typeof ClientsRoute
   '/financial': typeof FinancialRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/my-tasks': typeof MyTasksRoute
-  '/projects': typeof ProjectsRouteWithChildren
+  '/projects': typeof ProjectsRoute
   '/proposals': typeof ProposalsRoute
   '/site-portfolio': typeof SitePortfolioRoute
   '/tasks': typeof TasksRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  '/clients/$id': typeof ClientsIdRoute
-  '/projects/$id': typeof ProjectsIdRoute
+  '/clients_/$id': typeof ClientsIdRoute
+  '/projects_/$id': typeof ProjectsIdRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -228,8 +228,8 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
-    | '/clients/$id'
-    | '/projects/$id'
+    | '/clients_/$id'
+    | '/projects_/$id'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
   fileRoutesById: FileRoutesById
@@ -237,17 +237,19 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  ClientsRoute: typeof ClientsRouteWithChildren
+  ClientsRoute: typeof ClientsRoute
   FinancialRoute: typeof FinancialRoute
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
   MyTasksRoute: typeof MyTasksRoute
-  ProjectsRoute: typeof ProjectsRouteWithChildren
+  ProjectsRoute: typeof ProjectsRoute
   ProposalsRoute: typeof ProposalsRoute
   SitePortfolioRoute: typeof SitePortfolioRoute
   TasksRoute: typeof TasksRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ClientsIdRoute: typeof ClientsIdRoute
+  ProjectsIdRoute: typeof ProjectsIdRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -345,19 +347,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/clients/$id': {
-      id: '/clients/$id'
-      path: '/$id'
+    '/clients_/$id': {
+      id: '/clients_/$id'
+      path: '/clients/$id'
       fullPath: '/clients/$id'
       preLoaderRoute: typeof ClientsIdRouteImport
-      parentRoute: typeof ClientsRoute
+      parentRoute: typeof rootRouteImport
     }
-    '/projects/$id': {
-      id: '/projects/$id'
-      path: '/$id'
+    '/projects_/$id': {
+      id: '/projects_/$id'
+      path: '/projects/$id'
       fullPath: '/projects/$id'
       preLoaderRoute: typeof ProjectsIdRouteImport
-      parentRoute: typeof ProjectsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
@@ -376,44 +378,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ClientsRouteChildren {
-  ClientsIdRoute: typeof ClientsIdRoute
-}
-
-const ClientsRouteChildren: ClientsRouteChildren = {
-  ClientsIdRoute: ClientsIdRoute,
-}
-
-const ClientsRouteWithChildren =
-  ClientsRoute._addFileChildren(ClientsRouteChildren)
-
-interface ProjectsRouteChildren {
-  ProjectsIdRoute: typeof ProjectsIdRoute
-}
-
-const ProjectsRouteChildren: ProjectsRouteChildren = {
-  ProjectsIdRoute: ProjectsIdRoute,
-}
-
-const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
-  ProjectsRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  ClientsRoute: ClientsRouteWithChildren,
+  ClientsRoute: ClientsRoute,
   FinancialRoute: FinancialRoute,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
   MyTasksRoute: MyTasksRoute,
-  ProjectsRoute: ProjectsRouteWithChildren,
+  ProjectsRoute: ProjectsRoute,
   ProposalsRoute: ProposalsRoute,
   SitePortfolioRoute: SitePortfolioRoute,
   TasksRoute: TasksRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ClientsIdRoute: ClientsIdRoute,
+  ProjectsIdRoute: ProjectsIdRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
