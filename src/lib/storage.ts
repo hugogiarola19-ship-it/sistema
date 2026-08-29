@@ -22,6 +22,8 @@ const KEYS = {
   transactions: "hg.transactions",
   proposals: "hg.proposals",
   expenseCategories: "hg.expenseCategories",
+  revenueCategories: "hg.revenueCategories",
+  investmentCategories: "hg.investmentCategories",
   seeded: "hg.seeded.v3",
 } as const;
 
@@ -358,42 +360,128 @@ export const sortedSections = (sections: TaskSection[]) =>
 export const sortedFields = (fields: TaskFieldDef[]) =>
   [...fields].sort((a, b) => a.order - b.order);
 
-export const DEFAULT_EXPENSE_CATEGORIES = [
-  "Anuidade CREA",
-  "Aluguel",
+/** Categorias de despesa fixas — custo para manter o escritório funcionando. */
+export const FIXED_EXPENSE_CATEGORIES = [
+  "Contabilidade",
+  "Aluguel/escritório",
   "Água",
   "Luz",
   "Internet",
+  "Telefone",
+  "Sistemas de gestão",
+  "Softwares de engenharia",
+  "Armazenamento em nuvem",
+  "Servidor/NAS",
+  "Domínio e hospedagem",
+  "Anuidade CREA",
   "Seguro",
-  "Software",
+  "Serviços administrativos",
 ];
 
-export function useExpenseCategories() {
+/** Categorias de despesa variáveis — oscilam conforme a demanda de projetos. */
+export const VARIABLE_EXPENSE_CATEGORIES = [
+  "Impressões",
+  "Plotagens",
+  "Deslocamento",
+  "Combustível",
+  "Pedágios",
+  "Alimentação em visita técnica",
+  "Terceirização",
+  "Freelancer",
+  "Levantamento",
+  "Topografia",
+  "Consultoria especializada",
+];
+
+/** Categorias de imposto — usadas para destacar a carga tributária separadamente das demais despesas. */
+export const TAX_EXPENSE_CATEGORIES = [
+  "Simples Nacional",
+  "ISS",
+  "Retenções",
+  "INSS",
+  "IR/CSLL",
+  "Taxas e obrigações",
+];
+
+/** Categorias de marketing e comercial — quanto o escritório investe para conseguir clientes. */
+export const MARKETING_EXPENSE_CATEGORIES = [
+  "Instagram/Meta Ads",
+  "Google Ads",
+  "Site",
+  "Portfólio",
+  "Eventos",
+  "Networking",
+  "Comissões",
+  "Material comercial",
+];
+
+export const DEFAULT_EXPENSE_CATEGORIES = [
+  ...FIXED_EXPENSE_CATEGORIES,
+  ...VARIABLE_EXPENSE_CATEGORIES,
+  ...TAX_EXPENSE_CATEGORIES,
+  ...MARKETING_EXPENSE_CATEGORIES,
+];
+
+export const DEFAULT_REVENUE_CATEGORIES = [
+  "Projeto estrutural residencial",
+  "Projeto estrutural comercial",
+  "Projeto estrutural industrial",
+  "Projeto de fundações",
+  "Projeto de estruturas metálicas",
+  "Reforma/reforço estrutural",
+  "Compatibilização de projetos",
+  "Consultoria e laudos",
+  "Visita técnica",
+  "Assessoria de execução",
+  "Projeto complementar",
+  "Contrato de assessoria mensal",
+];
+
+export const DEFAULT_INVESTMENT_CATEGORIES = [
+  "Equipamentos",
+  "Software",
+  "Estrutura/escritório",
+  "Veículos",
+  "Marketing e crescimento",
+  "Cursos e treinamentos",
+];
+
+function useCategories(key: string, defaults: string[]) {
   const [custom, setCustom] = useState<string[]>([]);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(KEYS.expenseCategories);
+      const raw = localStorage.getItem(key);
       setCustom(raw ? (JSON.parse(raw) as string[]) : []);
     } catch {
       setCustom([]);
     }
-  }, []);
+  }, [key]);
 
-  const addCategory = useCallback((name: string) => {
-    const value = name.trim();
-    if (!value) return;
-    setCustom((prev) => {
-      const all = [...DEFAULT_EXPENSE_CATEGORIES, ...prev];
-      if (all.some((c) => c.toLowerCase() === value.toLowerCase())) return prev;
-      const next = [...prev, value];
-      localStorage.setItem(KEYS.expenseCategories, JSON.stringify(next));
-      return next;
-    });
-  }, []);
+  const addCategory = useCallback(
+    (name: string) => {
+      const value = name.trim();
+      if (!value) return;
+      setCustom((prev) => {
+        const all = [...defaults, ...prev];
+        if (all.some((c) => c.toLowerCase() === value.toLowerCase())) return prev;
+        const next = [...prev, value];
+        localStorage.setItem(key, JSON.stringify(next));
+        return next;
+      });
+    },
+    [key, defaults],
+  );
 
-  return { categories: [...DEFAULT_EXPENSE_CATEGORIES, ...custom], addCategory };
+  return { categories: [...defaults, ...custom], addCategory };
 }
+
+export const useExpenseCategories = () =>
+  useCategories(KEYS.expenseCategories, DEFAULT_EXPENSE_CATEGORIES);
+export const useRevenueCategories = () =>
+  useCategories(KEYS.revenueCategories, DEFAULT_REVENUE_CATEGORIES);
+export const useInvestmentCategories = () =>
+  useCategories(KEYS.investmentCategories, DEFAULT_INVESTMENT_CATEGORIES);
 
 export const projectProgress = (tasks: Task[], sections: TaskSection[], projectId: string) => {
   const t = tasks.filter((x) => x.projectId === projectId);

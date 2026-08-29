@@ -2,7 +2,7 @@ export type ProjectType = "Unifamiliar" | "Multifamiliar" | "Comercial";
 export type ProjectStatus = "Em andamento" | "Aguardando cliente" | "Entregue" | "Arquivado";
 export type ClientType = "Arquiteto" | "Construtora" | "Cliente particular" | "Seguradora";
 export type TaskPriority = "Alta" | "Média" | "Baixa";
-export type TxType = "Receita" | "Despesa";
+export type TxType = "Receita" | "Despesa" | "Investimento" | "Pró-labore";
 export type TxStatus = "Pago" | "Pendente" | "Cancelado";
 export type ProposalStatus = "Aberto" | "Aprovado" | "Recusado" | "Expirado";
 
@@ -104,6 +104,10 @@ export interface Transaction {
   recurringId?: string;
   /** categoria da despesa (apenas quando type = Despesa) */
   expenseCategory?: string;
+  /** categoria da receita (apenas quando type = Receita) */
+  revenueCategory?: string;
+  /** categoria do investimento (apenas quando type = Investimento) */
+  investmentCategory?: string;
   /** índice da parcela (1-based) quando o lançamento vem do parcelamento de um projeto */
   installment?: number;
 }
