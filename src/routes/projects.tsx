@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { FolderKanban, Plus, Trash2, Pencil } from "lucide-react";
 import {
@@ -39,6 +39,7 @@ export const Route = createFileRoute("/projects")({
 });
 
 function ProjectsPage() {
+  const navigate = useNavigate();
   const { items, remove } = useProjects();
   const { items: clients } = useClients();
   const { items: tasks } = useTasks();
@@ -127,7 +128,11 @@ function ProjectsPage() {
           className={view === "bloco" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3" : "grid gap-3"}
         >
           {filtered.map((p) => (
-            <Card key={p.id} className="hover:shadow-sm transition-shadow">
+            <Card
+              key={p.id}
+              className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+              onClick={() => navigate({ to: "/projects/$id", params: { id: p.id } })}
+            >
               <CardContent className="p-4 sm:p-5">
                 <div
                   className={
@@ -137,13 +142,7 @@ function ProjectsPage() {
                   }
                 >
                   <div className="min-w-0 flex-1">
-                    <Link
-                      to="/projects/$id"
-                      params={{ id: p.id }}
-                      className="font-medium hover:text-primary block truncate"
-                    >
-                      {p.name}
-                    </Link>
+                    <p className="font-medium truncate">{p.name}</p>
                     <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-1">
                       <span>{clientName(p.clientId)}</span>
                       <span>·</span>
@@ -154,7 +153,7 @@ function ProjectsPage() {
                       <span className="font-medium text-foreground">{formatBRL(p.value)}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <StatusBadge value={p.status} />
                     <ProjectFormDialog
                       initial={p}

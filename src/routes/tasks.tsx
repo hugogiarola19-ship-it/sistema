@@ -64,14 +64,13 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-import { StatusBadge } from "@/components/StatusBadge";
 import { TaskFormDialog } from "@/components/forms/TaskFormDialog";
 import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { ManageFieldsDialog } from "@/components/ManageFieldsDialog";
 import { DatePickerField } from "@/components/DatePickerField";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
-import type { Task, TaskPriority, Subtask } from "@/lib/types";
+import type { Task, TaskPriority, Subtask, TaskFieldDef } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tasks")({
@@ -147,15 +146,9 @@ function TasksPage() {
   }, [sorted, sections]);
 
   const subtasksFor = (taskId: string) => subtasks.filter((s) => s.taskId === taskId);
-  const subtaskCount = (taskId: string) => {
-    const own = subtasksFor(taskId);
-    return own.length ? { total: own.length, done: own.filter((s) => s.completed).length } : null;
-  };
 
   const projName = (id?: string) => projects.find((p) => p.id === id)?.name;
   const sectionName = (id: string) => sections.find((s) => s.id === id)?.name ?? "—";
-  const userName = (id?: string) =>
-    users.find((u) => u.id === id)?.name || users.find((u) => u.id === id)?.email;
 
   const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
   const onDragEnd = (e: DragEndEvent) => {
@@ -410,54 +403,72 @@ function TasksPage() {
                   </TableHeader>
                   <TableBody>
                     {g.tasks.map((t) => {
-                      const st = subtaskCount(t.id);
                       return (
-                        <TableRow
-                          key={t.id}
-                          className="cursor-pointer"
-                          onClick={() => setOpenTaskId(t.id)}
-                        >
+                        <TableRow key={t.id}>
                           <TableCell>
-                            <p
-                              className={cn(
-                                "text-sm font-medium",
-                                isTaskDone(t, sections) && "line-through text-muted-foreground",
-                              )}
+                            <button
+                              className="text-left"
+                              onClick={() => setOpenTaskId(t.id)}
+                              title="Abrir detalhes da tarefa"
                             >
-                              {t.title}
-                            </p>
-                            {st && (
-                              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-                                <ListChecks className="h-3 w-3" />
-                                {st.done}/{st.total}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {projName(t.projectId) ?? "—"}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                            {t.dueDate ? formatDate(t.dueDate) : "—"}
+                              <p
+                                className={cn(
+                                  "text-sm font-medium hover:text-primary",
+                                  isTaskDone(t, sections) && "line-through text-muted-foreground",
+                                )}
+                              >
+                                {t.title}
+                              </p>
+                            </button>
+                            <SubtasksInline
+                              subtasks={subtasksFor(t.id)}
+                              onToggle={(id, completed) => updateSubtask(id, { completed })}
+                            />
                           </TableCell>
                           <TableCell>
-                            <StatusBadge value={t.priority} />
+                            <ProjectInlineSelect
+                              task={t}
+                              projects={projects}
+                              onUpdate={(patch) => update(t.id, patch)}
+                            />
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {userName(t.assigneeId) ?? "—"}
+                          <TableCell>
+                            <DatePickerField
+                              value={t.dueDate}
+                              onChange={(v) => update(t.id, { dueDate: v })}
+                              placeholder="Prazo"
+                              className={cn(tableCellEditClass, "[&_svg]:mr-1.5")}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <PriorityInlineSelect
+                              task={t}
+                              users={users}
+                              onUpdate={(patch) => update(t.id, patch)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <AssigneeInlineSelect
+                              task={t}
+                              users={users}
+                              onUpdate={(patch) => update(t.id, patch)}
+                            />
                           </TableCell>
                           {fields.map((f) => (
-                            <TableCell key={f.id} className="text-sm text-muted-foreground">
-                              {t.customFields?.[f.id] ?? "—"}
+                            <TableCell key={f.id}>
+                              <CustomFieldInline
+                                field={f}
+                                value={t.customFields?.[f.id]}
+                                onChange={(v) =>
+                                  update(t.id, { customFields: { ...t.customFields, [f.id]: v } })
+                                }
+                              />
                             </TableCell>
                           ))}
                           <TableCell>
                             <ConfirmDelete
                               trigger={
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
+                                <Button variant="ghost" size="icon">
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               }
@@ -581,6 +592,77 @@ type QuickEditProps = {
 const priorities: TaskPriority[] = ["Alta", "Média", "Baixa"];
 const inlinePillClass =
   "h-6 w-auto gap-1 rounded-full border-none bg-secondary px-2 py-0 text-[11px] shadow-none focus:ring-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-40";
+const tableCellEditClass =
+  "h-8 w-full max-w-[170px] justify-start truncate border-none bg-transparent px-1.5 shadow-none hover:bg-muted/60 focus:bg-muted/60 focus:ring-1 rounded-md text-sm [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-50";
+
+function ProjectInlineSelect({
+  task,
+  projects,
+  onUpdate,
+}: {
+  task: Task;
+  projects: { id: string; name: string }[];
+  onUpdate: (patch: Partial<Task>) => void;
+}) {
+  return (
+    <Select
+      value={task.projectId ?? "none"}
+      onValueChange={(v) => onUpdate({ projectId: v === "none" ? undefined : v })}
+    >
+      <SelectTrigger className={tableCellEditClass} onClick={(e) => e.stopPropagation()}>
+        <SelectValue placeholder="Projeto" />
+      </SelectTrigger>
+      <SelectContent onClick={(e) => e.stopPropagation()}>
+        <SelectItem value="none">Sem projeto</SelectItem>
+        {projects.map((p) => (
+          <SelectItem key={p.id} value={p.id}>
+            {p.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function CustomFieldInline({
+  field,
+  value,
+  onChange,
+}: {
+  field: TaskFieldDef;
+  value: string | number | undefined;
+  onChange: (value: string | number) => void;
+}) {
+  if (field.type === "select") {
+    return (
+      <Select
+        value={value != null && value !== "" ? String(value) : "none"}
+        onValueChange={(v) => onChange(v === "none" ? "" : v)}
+      >
+        <SelectTrigger className={tableCellEditClass} onClick={(e) => e.stopPropagation()}>
+          <SelectValue placeholder="—" />
+        </SelectTrigger>
+        <SelectContent onClick={(e) => e.stopPropagation()}>
+          <SelectItem value="none">—</SelectItem>
+          {(field.options ?? []).map((o) => (
+            <SelectItem key={o} value={o}>
+              {o}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+  return (
+    <Input
+      type={field.type === "number" ? "number" : "text"}
+      value={value ?? ""}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(field.type === "number" ? Number(e.target.value) : e.target.value)}
+      className={tableCellEditClass}
+    />
+  );
+}
 
 function PriorityInlineSelect({ task, onUpdate }: QuickEditProps) {
   return (

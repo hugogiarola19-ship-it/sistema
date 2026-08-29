@@ -115,4 +115,8 @@ export interface Proposal {
   value: number;
   sentDate: string;
   status: ProposalStatus;
+  /** nome do arquivo PDF anexado */
+  pdfName?: string;
+  /** conteúdo do PDF anexado, como data URL (base64) */
+  pdfDataUrl?: string;
 }

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { FileText, Plus, Trash2, FileDown } from "lucide-react";
+import { useRef, useState } from "react";
+import { FileText, Plus, Trash2, FileDown, Paperclip, X } from "lucide-react";
 import { useClients, useProposals, formatBRL, formatDate } from "@/lib/storage";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,9 @@ function ProposalsPage() {
   const { items, remove, update } = useProposals();
   const { items: clients } = useClients();
   const [view, setView] = useViewMode("proposals", "lista");
+  const [openId, setOpenId] = useState<string | null>(null);
   const clientName = (id: string) => clients.find((c) => c.id === id)?.name ?? "—";
+  const openProposal = items.find((p) => p.id === openId) ?? null;
 
   return (
     <div>
@@ -82,7 +84,11 @@ function ProposalsPage() {
           className={view === "bloco" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3" : "grid gap-3"}
         >
           {items.map((p) => (
-            <Card key={p.id}>
+            <Card
+              key={p.id}
+              className="cursor-pointer hover:border-primary/40 transition-colors"
+              onClick={() => setOpenId(p.id)}
+            >
               <CardContent className="p-4 sm:p-5">
                 <div
                   className={
@@ -94,11 +100,19 @@ function ProposalsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{clientName(p.clientId)}</p>
                     <p className="text-sm text-muted-foreground mt-1">{p.description}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5 flex-wrap">
                       Enviada em {formatDate(p.sentDate)} · {formatBRL(p.value)}
+                      {p.pdfName && (
+                        <span className="inline-flex items-center gap-1 text-foreground">
+                          <Paperclip className="h-3 w-3" /> {p.pdfName}
+                        </span>
+                      )}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div
+                    className="flex items-center gap-2 flex-wrap"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Select
                       value={p.status}
                       onValueChange={(v) => {
@@ -119,9 +133,22 @@ function ProposalsPage() {
                         )}
                       </SelectContent>
                     </Select>
-                    <Button variant="ghost" size="icon" disabled title="Exportar PDF — em breve">
-                      <FileDown className="h-4 w-4 text-muted-foreground" />
-                    </Button>
+                    {p.pdfDataUrl ? (
+                      <Button variant="ghost" size="icon" asChild title="Baixar PDF">
+                        <a href={p.pdfDataUrl} download={p.pdfName || "proposta.pdf"}>
+                          <FileDown className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled
+                        title="Nenhum PDF anexado — abra a proposta para anexar"
+                      >
+                        <FileDown className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
                     <ConfirmDelete
                       trigger={
                         <Button variant="ghost" size="icon">
@@ -141,6 +168,7 @@ function ProposalsPage() {
           ))}
         </div>
       )}
+      <ProposalDetailDialog proposal={openProposal} onClose={() => setOpenId(null)} />
     </div>
   );
 }
@@ -235,6 +263,167 @@ function ProposalFormDialog({ trigger }: { trigger: React.ReactNode }) {
             Cancelar
           </Button>
           <Button onClick={submit}>Criar proposta</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const MAX_PDF_BYTES = 8 * 1024 * 1024;
+
+function ProposalDetailDialog({
+  proposal,
+  onClose,
+}: {
+  proposal: Proposal | null;
+  onClose: () => void;
+}) {
+  const { update } = useProposals();
+  const { items: clients } = useClients();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  if (!proposal) return null;
+
+  const handleFile = (file: File) => {
+    if (file.type !== "application/pdf") {
+      toast.error("Selecione um arquivo PDF.");
+      return;
+    }
+    if (file.size > MAX_PDF_BYTES) {
+      toast.error("O PDF deve ter no máximo 8 MB.");
+      return;
+    }
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      update(proposal.id, { pdfName: file.name, pdfDataUrl: String(reader.result) });
+      toast.success("PDF anexado.");
+      setUploading(false);
+    };
+    reader.onerror = () => {
+      toast.error("Não foi possível ler o arquivo.");
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <Dialog open={!!proposal} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Proposta — {clients.find((c) => c.id === proposal.clientId)?.name ?? "—"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <F label="Cliente">
+            <Select
+              value={proposal.clientId}
+              onValueChange={(v) => update(proposal.id, { clientId: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </F>
+          <F label="Descrição do projeto">
+            <Textarea
+              rows={3}
+              value={proposal.description}
+              onChange={(e) => update(proposal.id, { description: e.target.value })}
+            />
+          </F>
+          <div className="grid grid-cols-3 gap-4">
+            <F label="Valor (R$)">
+              <Input
+                type="number"
+                value={proposal.value}
+                onChange={(e) => update(proposal.id, { value: Number(e.target.value) })}
+              />
+            </F>
+            <F label="Data de envio">
+              <Input
+                type="date"
+                value={proposal.sentDate}
+                onChange={(e) => update(proposal.id, { sentDate: e.target.value })}
+              />
+            </F>
+            <F label="Status">
+              <Select
+                value={proposal.status}
+                onValueChange={(v) => update(proposal.id, { status: v as ProposalStatus })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["Aberto", "Aprovado", "Recusado", "Expirado"] as ProposalStatus[]).map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </F>
+          </div>
+          <F label="Anexo em PDF">
+            {proposal.pdfName ? (
+              <div className="flex items-center justify-between gap-2 rounded-md border p-2.5 text-sm">
+                <a
+                  href={proposal.pdfDataUrl}
+                  download={proposal.pdfName}
+                  className="flex items-center gap-2 min-w-0 hover:text-primary"
+                >
+                  <Paperclip className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{proposal.pdfName}</span>
+                </a>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    update(proposal.id, { pdfName: undefined, pdfDataUrl: undefined });
+                    toast.success("Anexo removido.");
+                  }}
+                >
+                  <X className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="h-4 w-4 mr-1" />
+                {uploading ? "Enviando..." : "Anexar PDF"}
+              </Button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFile(file);
+                e.target.value = "";
+              }}
+            />
+          </F>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Fechar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Users, Plus, Trash2, Pencil, Phone, Mail, MapPin } from "lucide-react";
 import { useClients, useProjects } from "@/lib/storage";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,9 +21,11 @@ export const Route = createFileRoute("/clients")({
 });
 
 function ClientsPage() {
+  const navigate = useNavigate();
   const { items, remove } = useClients();
   const { items: projects } = useProjects();
   const [view, setView] = useViewMode("clients", "bloco");
+  const openClient = (id: string) => navigate({ to: "/clients/$id", params: { id } });
   const activeCount = (cid: string) =>
     projects.filter(
       (p) =>
@@ -67,23 +69,22 @@ function ClientsPage() {
       ) : view === "bloco" ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((c) => (
-            <Card key={c.id}>
+            <Card
+              key={c.id}
+              className="cursor-pointer hover:border-primary/40 transition-colors"
+              onClick={() => openClient(c.id)}
+            >
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <Link
-                      to="/clients/$id"
-                      params={{ id: c.id }}
-                      title={c.name}
-                      className="font-medium hover:text-primary block truncate"
-                    >
+                    <p className="font-medium truncate" title={c.name}>
                       {c.name}
-                    </Link>
+                    </p>
                     <Badge variant="secondary" className="mt-1">
                       {c.type}
                     </Badge>
                   </div>
-                  <div className="flex">
+                  <div className="flex" onClick={(e) => e.stopPropagation()}>
                     <ClientFormDialog
                       initial={c}
                       trigger={
@@ -106,7 +107,10 @@ function ClientsPage() {
                     />
                   </div>
                 </div>
-                <div className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+                <div
+                  className="mt-4 space-y-1.5 text-sm text-muted-foreground"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {c.city && (
                     <p className="flex items-center gap-2">
                       <MapPin className="h-3.5 w-3.5" />
@@ -146,16 +150,14 @@ function ClientsPage() {
         <Card>
           <CardContent className="p-0 divide-y">
             {items.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
+              <div
+                key={c.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer hover:bg-secondary/40"
+                onClick={() => openClient(c.id)}
+              >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Link
-                      to="/clients/$id"
-                      params={{ id: c.id }}
-                      className="font-medium hover:text-primary truncate"
-                    >
-                      {c.name}
-                    </Link>
+                    <p className="font-medium truncate">{c.name}</p>
                     <Badge variant="secondary">{c.type}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 truncate">
@@ -165,7 +167,7 @@ function ClientsPage() {
                 <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">
                   <span className="font-medium text-foreground">{activeCount(c.id)}</span> ativo(s)
                 </span>
-                <div className="flex">
+                <div className="flex" onClick={(e) => e.stopPropagation()}>
                   <ClientFormDialog
                     initial={c}
                     trigger={

@@ -17,7 +17,7 @@ import { ClientFormDialog } from "@/components/forms/ClientFormDialog";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/clients/$id")({
+export const Route = createFileRoute("/clients_/$id")({
   component: ClientDetail,
 });
 
@@ -44,6 +44,7 @@ function ClientDetail() {
   }
 
   const linked = projects.filter((p) => p.clientId === client.id);
+  const totalValue = linked.reduce((sum, p) => sum + p.value, 0);
   const waLink = `https://wa.me/${client.phone.replace(/\D/g, "")}`;
 
   return (
@@ -133,7 +134,7 @@ function ClientDetail() {
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Projetos vinculados</CardTitle>
+            <CardTitle className="text-base">Histórico de projetos</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {linked.length === 0 && (
@@ -150,14 +151,25 @@ function ClientDetail() {
                   <div className="min-w-0">
                     <p className="font-medium truncate">{p.name}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {p.type} · {formatBRL(p.value)} · prazo {formatDate(p.deadline)}
+                      {p.type} · prazo {formatDate(p.deadline)}
                     </p>
                   </div>
-                  <StatusBadge value={p.status} />
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="font-medium tabular-nums">{formatBRL(p.value)}</span>
+                    <StatusBadge value={p.status} />
+                  </div>
                 </div>
                 <Progress value={projectProgress(tasks, sections, p.id)} className="h-1.5 mt-2" />
               </Link>
             ))}
+            {linked.length > 0 && (
+              <div className="flex items-center justify-between gap-3 border-t pt-3 text-sm">
+                <span className="font-medium">
+                  Total ({linked.length} projeto{linked.length === 1 ? "" : "s"})
+                </span>
+                <span className="font-semibold tabular-nums">{formatBRL(totalValue)}</span>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
