@@ -140,12 +140,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {/* Sidebar — desktop */}
       <aside
         className={cn(
-          "hidden md:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-[width]",
+          "hidden md:flex flex-col fixed inset-y-0 left-0 z-30 bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-[width]",
           collapsed ? "w-16" : "w-60",
         )}
       >
         <Brand collapsed={collapsed} />
-        <nav className="flex-1 px-2 space-y-1">
+        <nav className="flex-1 min-h-0 overflow-y-auto px-2 space-y-1">
           {collapsed ? (
             visibleNav.map((item) => {
               const Icon = item.icon;
@@ -232,7 +232,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 pt-14 md:pt-0">
+      <div
+        className={cn(
+          "flex-1 flex flex-col min-w-0 pt-14 md:pt-0 transition-[margin]",
+          collapsed ? "md:ml-16" : "md:ml-60",
+        )}
+      >
         <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6">
           {blocked ? (
             <EmptyState
