@@ -8,11 +8,13 @@ import {
   useRevenueCategories,
   useInvestmentCategories,
   TAX_EXPENSE_CATEGORIES,
+  FIXED_EXPENSE_CATEGORIES,
   uid,
   formatBRL,
   formatDate,
 } from "@/lib/storage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,6 +119,39 @@ function FinancialPage() {
     .reduce((s, t) => s + t.value, 0);
   const result = received - expenses - investments - proLabore;
 
+  const avgFixedMonthly = useMemo(() => {
+    const byMonth = new Map<string, number>();
+    for (const t of items) {
+      if (t.type !== "Despesa" || t.status !== "Pago") continue;
+      if (!FIXED_EXPENSE_CATEGORIES.includes(t.expenseCategory ?? "")) continue;
+      const d = new Date(t.date);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      byMonth.set(key, (byMonth.get(key) ?? 0) + t.value);
+    }
+    if (byMonth.size === 0) return 0;
+    return [...byMonth.values()].reduce((s, v) => s + v, 0) / byMonth.size;
+  }, [items]);
+  const reserveMin = avgFixedMonthly * 3;
+  const reserveMax = avgFixedMonthly * 6;
+  const accumulatedBalance = useMemo(
+    () =>
+      items.reduce((s, t) => {
+        if (t.status !== "Pago") return s;
+        return t.type === "Receita" ? s + t.value : s - t.value;
+      }, 0),
+    [items],
+  );
+  const reserveProgress =
+    reserveMax > 0 ? Math.min(100, (accumulatedBalance / reserveMax) * 100) : 0;
+  const reserveStatus =
+    reserveMax === 0
+      ? "Sem despesas fixas suficientes para calcular uma meta."
+      : accumulatedBalance < reserveMin
+        ? "Abaixo da reserva mínima recomendada."
+        : accumulatedBalance < reserveMax
+          ? "Dentro da faixa recomendada."
+          : "Reserva completa.";
+
   const monthLabel = new Date(cursor.y, cursor.m, 1).toLocaleDateString("pt-BR", {
     month: "long",
     year: "numeric",
@@ -161,6 +196,46 @@ function FinancialPage() {
           </>
         }
       />
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">Reserva financeira</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Meta de 3 a 6 meses de despesas fixas, comparada ao saldo acumulado de todos os
+            lançamentos pagos.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Despesas fixas/mês
+              </p>
+              <p className="font-medium">{formatBRL(avgFixedMonthly)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Reserva ideal (3–6 meses)
+              </p>
+              <p className="font-medium">
+                {formatBRL(reserveMin)} – {formatBRL(reserveMax)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Saldo acumulado
+              </p>
+              <p className={`font-medium ${accumulatedBalance >= 0 ? "" : "text-destructive"}`}>
+                {formatBRL(accumulatedBalance)}
+              </p>
+            </div>
+          </div>
+          <div>
+            <Progress value={reserveProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-1.5">{reserveStatus}</p>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex items-center gap-2 mb-4">
         <Button variant="outline" size="icon" onClick={() => shift(-1)}>
