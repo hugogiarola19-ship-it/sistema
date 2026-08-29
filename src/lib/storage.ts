@@ -433,31 +433,77 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
   ...MARKETING_EXPENSE_CATEGORIES,
 ];
 
-export const DEFAULT_REVENUE_CATEGORIES = [
+/** Categorias de receita — projetos estruturais em si. */
+export const STRUCTURAL_REVENUE_CATEGORIES = [
   "Projeto estrutural residencial",
   "Projeto estrutural comercial",
   "Projeto estrutural industrial",
   "Projeto de fundações",
   "Projeto de estruturas metálicas",
   "Reforma/reforço estrutural",
+];
+
+/** Categorias de receita — serviços técnicos avulsos, não o projeto em si. */
+export const TECHNICAL_SERVICE_REVENUE_CATEGORIES = [
   "Compatibilização de projetos",
   "Consultoria e laudos",
   "Visita técnica",
   "Assessoria de execução",
+];
+
+/** Categorias de receita — contratos recorrentes e projetos complementares. */
+export const RECURRING_REVENUE_CATEGORIES = [
   "Projeto complementar",
   "Contrato de assessoria mensal",
 ];
 
-export const DEFAULT_INVESTMENT_CATEGORIES = [
-  "Equipamentos",
-  "Software",
-  "Estrutura/escritório",
-  "Veículos",
-  "Marketing e crescimento",
-  "Cursos e treinamentos",
+export const DEFAULT_REVENUE_CATEGORIES = [
+  ...STRUCTURAL_REVENUE_CATEGORIES,
+  ...TECHNICAL_SERVICE_REVENUE_CATEGORIES,
+  ...RECURRING_REVENUE_CATEGORIES,
 ];
 
-function useCategories(key: string, defaults: string[]) {
+/** Categorias de investimento — estrutura física do escritório. */
+export const STRUCTURE_INVESTMENT_CATEGORIES = ["Equipamentos", "Estrutura/escritório", "Veículos"];
+
+/** Categorias de investimento — softwares de engenharia e gestão. */
+export const SOFTWARE_INVESTMENT_CATEGORIES = ["Software"];
+
+/** Categorias de investimento — crescimento do escritório. */
+export const GROWTH_INVESTMENT_CATEGORIES = ["Marketing e crescimento", "Cursos e treinamentos"];
+
+export const DEFAULT_INVESTMENT_CATEGORIES = [
+  ...STRUCTURE_INVESTMENT_CATEGORIES,
+  ...SOFTWARE_INVESTMENT_CATEGORIES,
+  ...GROWTH_INVESTMENT_CATEGORIES,
+];
+
+export type CategoryGroup = { group: string; items: string[] };
+
+/** Categorias de despesa organizadas em macro (grupo) e micro (item), para facilitar a escolha entre tantas opções. */
+export const EXPENSE_CATEGORY_GROUPS: CategoryGroup[] = [
+  { group: "Despesas fixas", items: FIXED_EXPENSE_CATEGORIES },
+  { group: "Despesas variáveis", items: VARIABLE_EXPENSE_CATEGORIES },
+  { group: "Impostos", items: TAX_EXPENSE_CATEGORIES },
+  { group: "Marketing e comercial", items: MARKETING_EXPENSE_CATEGORIES },
+];
+
+export const REVENUE_CATEGORY_GROUPS: CategoryGroup[] = [
+  { group: "Projetos estruturais", items: STRUCTURAL_REVENUE_CATEGORIES },
+  { group: "Serviços técnicos", items: TECHNICAL_SERVICE_REVENUE_CATEGORIES },
+  { group: "Recorrentes e complementares", items: RECURRING_REVENUE_CATEGORIES },
+];
+
+export const INVESTMENT_CATEGORY_GROUPS: CategoryGroup[] = [
+  { group: "Estrutura", items: STRUCTURE_INVESTMENT_CATEGORIES },
+  { group: "Software", items: SOFTWARE_INVESTMENT_CATEGORIES },
+  { group: "Crescimento", items: GROWTH_INVESTMENT_CATEGORIES },
+];
+
+/** Meios de recebimento de uma receita. */
+export const PAYMENT_METHODS = ["Pix", "Boleto", "Transferência", "Cartão", "Dinheiro", "Outro"];
+
+function useCategories(key: string, defaults: string[], baseGroups: CategoryGroup[]) {
   const [custom, setCustom] = useState<string[]>([]);
 
   useEffect(() => {
@@ -484,15 +530,22 @@ function useCategories(key: string, defaults: string[]) {
     [key, defaults],
   );
 
-  return { categories: [...defaults, ...custom], addCategory };
+  const groups: CategoryGroup[] =
+    custom.length > 0 ? [...baseGroups, { group: "Outras", items: custom }] : baseGroups;
+
+  return { categories: [...defaults, ...custom], groups, addCategory };
 }
 
 export const useExpenseCategories = () =>
-  useCategories(KEYS.expenseCategories, DEFAULT_EXPENSE_CATEGORIES);
+  useCategories(KEYS.expenseCategories, DEFAULT_EXPENSE_CATEGORIES, EXPENSE_CATEGORY_GROUPS);
 export const useRevenueCategories = () =>
-  useCategories(KEYS.revenueCategories, DEFAULT_REVENUE_CATEGORIES);
+  useCategories(KEYS.revenueCategories, DEFAULT_REVENUE_CATEGORIES, REVENUE_CATEGORY_GROUPS);
 export const useInvestmentCategories = () =>
-  useCategories(KEYS.investmentCategories, DEFAULT_INVESTMENT_CATEGORIES);
+  useCategories(
+    KEYS.investmentCategories,
+    DEFAULT_INVESTMENT_CATEGORIES,
+    INVESTMENT_CATEGORY_GROUPS,
+  );
 
 export const projectProgress = (tasks: Task[], sections: TaskSection[], projectId: string) => {
   const t = tasks.filter((x) => x.projectId === projectId);

@@ -18,6 +18,7 @@ import {
   TAX_EXPENSE_CATEGORIES,
   FIXED_EXPENSE_CATEGORIES,
   MARKETING_EXPENSE_CATEGORIES,
+  PAYMENT_METHODS,
   uid,
   formatBRL,
   formatDate,
@@ -31,7 +32,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -45,7 +48,6 @@ import {
 } from "@/components/ui/dialog";
 import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { ViewToggle, useViewMode } from "@/components/ViewToggle";
-import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
 import type { Transaction, TxStatus, TxType } from "@/lib/types";
@@ -61,7 +63,7 @@ export const Route = createFileRoute("/financial")({
 });
 
 function FinancialPage() {
-  const { items, remove } = useTransactions();
+  const { items, remove, update } = useTransactions();
   const { items: projects } = useProjects();
   const { items: clients } = useClients();
   const today = new Date();
@@ -184,7 +186,10 @@ function FinancialPage() {
   const projName = (id?: string) => projects.find((p) => p.id === id)?.name ?? "—";
   const categoryLabel = (t: Transaction) => {
     if (t.type === "Despesa") return t.expenseCategory ?? projName(t.projectId);
-    if (t.type === "Receita") return t.revenueCategory ?? projName(t.projectId);
+    if (t.type === "Receita") {
+      const base = t.revenueCategory ?? projName(t.projectId);
+      return t.paymentMethod ? `${base} · ${t.paymentMethod}` : base;
+    }
     if (t.type === "Investimento") return t.investmentCategory ?? projName(t.projectId);
     return projName(t.projectId);
   };
@@ -424,7 +429,10 @@ function FinancialPage() {
                     {formatDate(t.date)} · {t.type} · {categoryLabel(t)}
                   </p>
                   <div className="flex items-center justify-between gap-2 mt-3">
-                    <StatusBadge value={t.status} />
+                    <TxStatusSelect
+                      status={t.status}
+                      onChange={(s) => update(t.id, { status: s })}
+                    />
                     <span className={`text-sm font-semibold tabular-nums ${txColorClass(t.type)}`}>
                       {txSign(t.type)} {formatBRL(t.value)}
                     </span>
@@ -443,7 +451,10 @@ function FinancialPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <StatusBadge value={t.status} />
+                    <TxStatusSelect
+                      status={t.status}
+                      onChange={(s) => update(t.id, { status: s })}
+                    />
                     <span className={`text-sm font-semibold tabular-nums ${txColorClass(t.type)}`}>
                       {txSign(t.type)} {formatBRL(t.value)}
                     </span>
@@ -467,6 +478,38 @@ function FinancialPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function TxStatusSelect({
+  status,
+  onChange,
+}: {
+  status: TxStatus;
+  onChange: (status: TxStatus) => void;
+}) {
+  const colorClass =
+    status === "Pago"
+      ? "border-success/30 bg-success/15 text-success"
+      : status === "Pendente"
+        ? "border-warning/30 bg-warning/15 text-warning-foreground"
+        : "border-destructive/30 bg-destructive/10 text-destructive";
+  return (
+    <Select value={status} onValueChange={(v) => onChange(v as TxStatus)}>
+      <SelectTrigger
+        className={`h-7 w-auto gap-1 rounded-full border px-2.5 py-0 text-xs font-medium shadow-none focus:ring-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-60 ${colorClass}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent onClick={(e) => e.stopPropagation()}>
+        {(["Pago", "Pendente", "Cancelado"] as TxStatus[]).map((s) => (
+          <SelectItem key={s} value={s}>
+            {s}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -715,10 +758,15 @@ function TransactionFormDialog({ trigger }: { trigger: React.ReactNode }) {
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categoryHook.categories.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
+                    {categoryHook.groups.map((g) => (
+                      <SelectGroup key={g.group}>
+                        <SelectLabel>{g.group}</SelectLabel>
+                        {g.items.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
                   </SelectContent>
                 </Select>
@@ -762,6 +810,28 @@ function TransactionFormDialog({ trigger }: { trigger: React.ReactNode }) {
                   </Button>
                 )}
               </div>
+            </F>
+          )}
+          {form.type === "Receita" && (
+            <F label="Meio de recebimento (opcional)">
+              <Select
+                value={form.paymentMethod ?? "none"}
+                onValueChange={(v) =>
+                  setForm({ ...form, paymentMethod: v === "none" ? undefined : v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não informado</SelectItem>
+                  {PAYMENT_METHODS.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </F>
           )}
           {RECURRING_TYPES.includes(form.type) && (
