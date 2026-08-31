@@ -604,6 +604,34 @@ const inlinePillClass =
   "h-6 w-auto max-w-full gap-1 truncate rounded-full border-none bg-secondary px-2 py-0 text-[11px] shadow-none focus:ring-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:shrink-0 [&>svg]:opacity-40 [&>span]:truncate";
 const tableCellEditClass =
   "h-8 w-full max-w-[170px] justify-start truncate border-none bg-transparent px-1.5 shadow-none hover:bg-muted/60 focus:bg-muted/60 focus:ring-1 rounded-md text-sm [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-50";
+const statusPillClass =
+  "h-7 w-full max-w-[150px] justify-start gap-1 truncate rounded-full border px-2.5 py-0 text-xs font-medium shadow-none focus:ring-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:shrink-0 [&>svg]:opacity-60 [&>span]:truncate";
+
+/** Cor sombreada por status (nome da seção). Seções customizadas caem no cinza padrão. */
+function sectionColorClass(name: string) {
+  switch (name.trim().toLowerCase()) {
+    case "em andamento":
+      return "border-primary/30 bg-primary/15 text-primary";
+    case "revisar":
+      return "border-warning/30 bg-warning/15 text-warning-foreground";
+    case "concluído":
+    case "concluido":
+      return "border-success/30 bg-success/15 text-success";
+    default:
+      return "border-border bg-muted text-muted-foreground";
+  }
+}
+
+function priorityColorClass(priority: TaskPriority) {
+  switch (priority) {
+    case "Baixa":
+      return "border border-success/30 bg-success/15 text-success";
+    case "Média":
+      return "border border-warning/30 bg-warning/15 text-warning-foreground";
+    case "Alta":
+      return "border border-destructive/30 bg-destructive/10 text-destructive";
+  }
+}
 
 function ProjectInlineSelect({
   task,
@@ -643,9 +671,13 @@ function SectionInlineSelect({
   sections: TaskSection[];
   onUpdate: (patch: Partial<Task>) => void;
 }) {
+  const current = sections.find((s) => s.id === task.sectionId);
   return (
     <Select value={task.sectionId} onValueChange={(v) => onUpdate({ sectionId: v })}>
-      <SelectTrigger className={tableCellEditClass} onClick={(e) => e.stopPropagation()}>
+      <SelectTrigger
+        className={cn(statusPillClass, sectionColorClass(current?.name ?? ""))}
+        onClick={(e) => e.stopPropagation()}
+      >
         <SelectValue placeholder="Status" />
       </SelectTrigger>
       <SelectContent onClick={(e) => e.stopPropagation()}>
@@ -702,7 +734,10 @@ function CustomFieldInline({
 function PriorityInlineSelect({ task, onUpdate }: QuickEditProps) {
   return (
     <Select value={task.priority} onValueChange={(v) => onUpdate({ priority: v as TaskPriority })}>
-      <SelectTrigger className={inlinePillClass} onClick={(e) => e.stopPropagation()}>
+      <SelectTrigger
+        className={cn(inlinePillClass, priorityColorClass(task.priority))}
+        onClick={(e) => e.stopPropagation()}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent onClick={(e) => e.stopPropagation()}>
