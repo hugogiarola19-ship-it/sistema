@@ -70,7 +70,7 @@ import { ManageFieldsDialog } from "@/components/ManageFieldsDialog";
 import { DatePickerField } from "@/components/DatePickerField";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { toast } from "sonner";
-import type { Task, TaskPriority, Subtask, TaskFieldDef } from "@/lib/types";
+import type { Task, TaskPriority, Subtask, TaskFieldDef, TaskSection } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tasks")({
@@ -292,7 +292,7 @@ function TasksPage() {
               <SelectValue placeholder="Agrupar por" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="secao">Agrupar: Seção</SelectItem>
+              <SelectItem value="secao">Agrupar: Status</SelectItem>
               <SelectItem value="responsavel">Agrupar: Responsável</SelectItem>
               <SelectItem value="nenhum">Sem agrupamento</SelectItem>
             </SelectContent>
@@ -387,16 +387,19 @@ function TasksPage() {
                 </h3>
               )}
               <Card>
-                <Table>
+                <Table className="table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tarefa</TableHead>
-                      <TableHead>Projeto</TableHead>
-                      <TableHead>Prazo</TableHead>
-                      <TableHead>Prioridade</TableHead>
-                      <TableHead>Responsável</TableHead>
+                      <TableHead className="w-[220px]">Tarefa</TableHead>
+                      <TableHead className="w-[140px]">Status</TableHead>
+                      <TableHead className="w-[150px]">Projeto</TableHead>
+                      <TableHead className="w-[110px]">Prazo</TableHead>
+                      <TableHead className="w-[110px]">Prioridade</TableHead>
+                      <TableHead className="w-[140px]">Responsável</TableHead>
                       {fields.map((f) => (
-                        <TableHead key={f.id}>{f.name}</TableHead>
+                        <TableHead key={f.id} className="w-[140px]">
+                          {f.name}
+                        </TableHead>
                       ))}
                       <TableHead className="w-9" />
                     </TableRow>
@@ -407,13 +410,13 @@ function TasksPage() {
                         <TableRow key={t.id}>
                           <TableCell>
                             <button
-                              className="text-left"
+                              className="block max-w-full text-left"
                               onClick={() => setOpenTaskId(t.id)}
-                              title="Abrir detalhes da tarefa"
+                              title={t.title}
                             >
                               <p
                                 className={cn(
-                                  "text-sm font-medium hover:text-primary",
+                                  "truncate text-sm font-medium hover:text-primary",
                                   isTaskDone(t, sections) && "line-through text-muted-foreground",
                                 )}
                               >
@@ -423,6 +426,13 @@ function TasksPage() {
                             <SubtasksInline
                               subtasks={subtasksFor(t.id)}
                               onToggle={(id, completed) => updateSubtask(id, { completed })}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <SectionInlineSelect
+                              task={t}
+                              sections={sections}
+                              onUpdate={(patch) => update(t.id, patch)}
                             />
                           </TableCell>
                           <TableCell>
@@ -591,7 +601,7 @@ type QuickEditProps = {
 
 const priorities: TaskPriority[] = ["Alta", "Média", "Baixa"];
 const inlinePillClass =
-  "h-6 w-auto gap-1 rounded-full border-none bg-secondary px-2 py-0 text-[11px] shadow-none focus:ring-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-40";
+  "h-6 w-auto max-w-full gap-1 truncate rounded-full border-none bg-secondary px-2 py-0 text-[11px] shadow-none focus:ring-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:shrink-0 [&>svg]:opacity-40 [&>span]:truncate";
 const tableCellEditClass =
   "h-8 w-full max-w-[170px] justify-start truncate border-none bg-transparent px-1.5 shadow-none hover:bg-muted/60 focus:bg-muted/60 focus:ring-1 rounded-md text-sm [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-50";
 
@@ -617,6 +627,31 @@ function ProjectInlineSelect({
         {projects.map((p) => (
           <SelectItem key={p.id} value={p.id}>
             {p.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function SectionInlineSelect({
+  task,
+  sections,
+  onUpdate,
+}: {
+  task: Task;
+  sections: TaskSection[];
+  onUpdate: (patch: Partial<Task>) => void;
+}) {
+  return (
+    <Select value={task.sectionId} onValueChange={(v) => onUpdate({ sectionId: v })}>
+      <SelectTrigger className={tableCellEditClass} onClick={(e) => e.stopPropagation()}>
+        <SelectValue placeholder="Status" />
+      </SelectTrigger>
+      <SelectContent onClick={(e) => e.stopPropagation()}>
+        {sections.map((s) => (
+          <SelectItem key={s.id} value={s.id}>
+            {s.name}
           </SelectItem>
         ))}
       </SelectContent>
